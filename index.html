@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acompanhamento de Processos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 p-4 md:p-8">
+  <div class="max-w-2xl mx-auto space-y-6">
+    <header class="flex justify-between items-center">
+      <h1 class="text-2xl font-bold">Meus Processos</h1>
+      <button onclick="carregarTodos()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700">Atualizar Todos</button>
+    </header>
+
+    <!-- Formulário de Cadastro -->
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <h2 class="text-sm font-semibold uppercase text-gray-500 mb-3">Novo Processo</h2>
+      <form id="form-cadastro" class="flex flex-col sm:flex-row gap-2">
+        <input id="input-cnj" type="text" placeholder="0000000-00.0000.8.06.0001" required 
+               class="flex-1 p-2 border rounded border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+        <input id="input-nome" type="text" placeholder="Identificador / Apelido" 
+               class="p-2 border rounded border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-green-700">Adicionar</button>
+      </form>
+    </div>
+
+    <!-- Lista de Processos -->
+    <div id="lista-processos" class="space-y-4"></div>
+  </div>
+
+  <script>
+    const API_KEY = "cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENxbUpBuzzrR0FJTQ==";
+    const TRIBUNAIS_ESTADUAIS = {
+      "01":"tjac","02":"tjal","03":"tjap","04":"tjam","05":"tjba","06":"tjce","07":"tjdft","08":"tjes","09":"tjgo",
+      "10":"tjma","11":"tjmt","12":"tjms","13":"tjmg","14":"tjpa","15":"tjpb","16":"tjpr","17":"tjpe","18":"tjpi",
+      "19":"tjrj","20":"tjrn","21":"tjrs","22":"tjro","23":"tjrr","24":"tjsc","25":"tjse","26":"tjsp","27":"tjto"
+    };
+
+    function identificarTribunal(cnj) {
+      const c = cnj.replace(/\D/g, "");
+      if (c.length !== 20) return null;
+      const j = c.charAt(13);
+      const tr = c.substring(14, 16);
+      if (j === "8") return TRIBUNAIS_ESTADUAIS[tr] || null;
+      if (j === "4") return `trf${parseInt(tr, 10)}`;
+      if (j === "5") return `trt${parseInt(tr, 10)}`;
+      if (j === "3") return "stj";
+      if (j === "1") return "stf";
+      return null;
+    }
+
+    function obterProcessos() {
+      return JSON.parse(localStorage.getItem("processos_salvos") || "[]");
+    }
+
+    function salvarProcessos(lista) {
+      localStorage.setItem("processos_salvos", JSON.stringify(lista));
+    }
+
+    async function consultarDataJud(numeroLimpo, tribunal) {
+      const url = `https://api-publica.datajud.cnj.jus.br/api_publica_${tribunal}/_search`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Authorization": `APIKey ${API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ query: { match: { numeroProcesso: numeroLimpo } } })
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.hits?.hits?.[0]?._source || null;
+    }
+
+    function formatarData(iso) {
+      if (!iso) return "-";
+      const d = new Date(iso);
+      return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    async function renderizarCard(item, index) {
+      const limpo = item.cnj.replace(/\D/g, "");
+      const tribunal = identificarTribunal(limpo);
+      
+      const div = document.createElement("div");
+      div.className = "bg-white p-4 rounded-lg shadow-sm border border-gray-200";
+      div.innerHTML = `
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <div class="text-xs font-semibold text-blue-600 uppercase">${tribunal ? tribunal.toUpperCase() : "N/D"}</div>
+            <h3 class="font-bold text-gray-900">${item.nome || item.cnj}</h3>
+            <p class="text-xs text-gray-500">${item.cnj}</p>
+          </div>
+          <button onclick="removerProcesso(${index})" class="text-red-500 text-xs hover:underline">Excluir</button>
+        </div>
+        <div id="andamentos-${index}" class="mt-3 text-xs text-gray-400">Consultando últimos andamentos...</div>
+      `;
+      document.getElementById("lista-processos").appendChild(div);
+
+      if (!tribunal) {
+        document.getElementById(`andamentos-${index}`).innerHTML = "<span class='text-red-500'>CNJ inválido</span>";
+        return;
+      }
+
+      try {
+        const dados = await consultarDataJud(limpo, tribunal);
+        const container = document.getElementById(`andamentos-${index}`);
+        if (!dados || !dados.movimentos) {
+          container.innerHTML = "<span class='text-gray-400'>Nenhum dado encontrado no DataJud.</span>";
+          return;
+        }
+
+        const movimentos = dados.movimentos
+          .sort((a, b) => (b.dataHora || "").localeCompare(a.dataHora || ""))
+          .slice(0, 3); // Extrai as últimas 3 movimentações
+
+        container.innerHTML = `
+          <div class="border-t pt-2 space-y-2">
+            <span class="font-semibold text-gray-600">Últimas 3 Movimentações:</span>
+            ${movimentos.map((m, i) => `
+              <div class="p-2 rounded bg-gray-50 border border-gray-100">
+                <div class="text-[11px] text-gray-500">${formatarData(m.dataHora)}</div>
+                <div class="font-medium text-gray-800">${m.nome || "Movimentação sem descrição"}</div>
+                ${m.complementosTabelados?.length ? `<div class="text-gray-500 text-[11px]">${m.complementosTabelados.map(c => c.descricao).join(" | ")}</div>` : ""}
+              </div>
+            `).join("")}
+          </div>
+        `;
+      } catch (err) {
+        document.getElementById(`andamentos-${index}`).innerHTML = `<span class="text-red-500">Erro na consulta: ${err.message}</span>`;
+      }
+    }
+
+    async function carregarTodos() {
+      const lista = obterProcessos();
+      const container = document.getElementById("lista-processos");
+      container.innerHTML = "";
+      if (lista.length === 0) {
+        container.innerHTML = "<p class='text-center text-sm text-gray-500 py-6'>Nenhum processo cadastrado.</p>";
+        return;
+      }
+      for (let i = 0; i < lista.length; i++) {
+        await renderizarCard(lista[i], i);
+      }
+    }
+
+    function removerProcesso(index) {
+      if (!confirm("Deseja remover este processo?")) return;
+      const lista = obterProcessos();
+      lista.splice(index, 1);
+      salvarProcessos(lista);
+      carregarTodos();
+    }
+
+    document.getElementById("form-cadastro").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const cnj = document.getElementById("input-cnj").value.trim();
+      const nome = document.getElementById("input-nome").value.trim();
+      const lista = obterProcessos();
+
+      lista.push({ cnj, nome });
+      salvarProcessos(lista);
+
+      document.getElementById("input-cnj").value = "";
+      document.getElementById("input-nome").value = "";
+      carregarTodos();
+    });
+
+    carregarTodos();
+  </script>
+</body>
+</html>
