@@ -1,573 +1,1121 @@
-const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
-const SHEET_PROCESSOS = "Processos";
-const SHEET_MOVIMENTACOES = "Movimentações";
-const SHEET_EMPRESAS = "Empresa";
-
-const DATAJUD_API_KEY = "APIKey cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==";
-
-/**
- * Endpoint GET da API
- */
-function doGet(e) {
-  const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "list";
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-
-  if (action === "list") {
-    let sheetEmp = ss.getSheetByName(SHEET_EMPRESAS);
-    if (!sheetEmp) {
-      sheetEmp = ss.insertSheet(SHEET_EMPRESAS);
-      sheetEmp.appendRow(["Codigo", "Nome", "Logotipo"]);
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>IAZ Jud - Monitoramento Processual</title>
+  <meta name="theme-color" content="#090d16" id="metaThemeColor">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class' };
+    const temaSalvo = localStorage.getItem("APP_THEME") || "dark";
+    if (temaSalvo === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
     }
-    const dataEmp = sheetEmp.getDataRange().getValues();
-    const empresas = dataEmp.slice(1).map(r => ({
-      codigo: String(r[0] || "").trim(),
-      nome: String(r[1] || "").trim(),
-      logo: String(r[2] || "").trim()
-    })).filter(emp => emp.codigo !== "");
-
-    const sheetProc = ss.getSheetByName(SHEET_PROCESSOS);
-    const dataProc = sheetProc.getDataRange().getValues();
-    const rows = dataProc.slice(1);
-    
-    const processos = rows.map((r, index) => ({
-      rowIndex: index + 2,
-      processo: r[0],
-      email: r[1],
-      tribunal: r[2],
-      ultimaData: r[3],
-      status: r[4],
-      apelido: r[5],
-      reclamante: r[6] || "",
-      reclamado: r[7] || "",
-      vara: r[8] || "",
-      tipo: r[9] || "",
-      empresa: String(r[10] || "").trim()
-    }));
-
-    return jsonResponse({ success: true, data: processos, empresas: empresas });
-  }
-
-  if (action === "movimentacoes") {
-    const sheet = ss.getSheetByName(SHEET_MOVIMENTACOES);
-    const data = sheet.getDataRange().getValues();
-    const rows = data.slice(1);
-    const numProcesso = e.parameter.processo;
-
-    let movs = rows.map(r => ({
-      dataCriacao: r[0],
-      dataMovimentacao: r[1],
-      processo: r[2],
-      atualizacao: r[3]
-    }));
-
-    if (numProcesso) {
-      movs = movs.filter(m => String(m.processo).trim() === String(numProcesso).trim());
-    }
-
-    return jsonResponse({ success: true, data: movs });
-  }
-
-  if (action === "sync") {
-    verificarMovimentacoesDataJud();
-    return jsonResponse({ success: true, message: "Verificação concluída com sucesso." });
-  }
-
-  return jsonResponse({ success: false, error: "Ação GET inválida." });
-}
-
-/**
- * Endpoint POST da API
- */
-function doPost(e) {
-  try {
-    const body = JSON.parse(e.postData.contents);
-    const action = body.action;
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(SHEET_PROCESSOS);
-    const data = sheet.getDataRange().getValues();
-
-    if (action === "sync") {
-      verificarMovimentacoesDataJud();
-      return jsonResponse({ success: true, message: "Verificação do DataJud concluída." });
-    }
-
-    if (action === "add_empresa") {
-      let sheetEmp = ss.getSheetByName(SHEET_EMPRESAS);
-      if (!sheetEmp) {
-        sheetEmp = ss.insertSheet(SHEET_EMPRESAS);
-        sheetEmp.appendRow(["Codigo", "Nome", "Logotipo"]);
-      }
-      sheetEmp.appendRow([
-        String(body.codigo || "").trim(),
-        String(body.nome || "").trim(),
-        String(body.logo || "").trim()
-      ]);
-      return jsonResponse({ success: true, message: "Empresa cadastrada com sucesso!" });
-    }
-
-    if (action === "delete_empresa") {
-      const sheetEmp = ss.getSheetByName(SHEET_EMPRESAS);
-      if (!sheetEmp) return jsonResponse({ success: false, error: "Aba Empresa não encontrada." });
-      const dataEmp = sheetEmp.getDataRange().getValues();
-      for (let i = 1; i < dataEmp.length; i++) {
-        if (String(dataEmp[i][0]).trim() === String(body.codigo).trim()) {
-          sheetEmp.deleteRow(i + 1);
-          return jsonResponse({ success: true, message: "Empresa removida com sucesso." });
-        }
-      }
-      return jsonResponse({ success: false, error: "Empresa não encontrada." });
-    }
-
-    if (action === "add") {
-      let tribunal = body.tribunal || inferirTribunalPorNumero(body.processo);
-      let reclamante = body.reclamante || "";
-      let reclamado = body.reclamado || "";
-      let vara = body.vara || "";
-      let tipo = body.tipo || "";
-      let ultimaData = body.ultimaData || "";
-
-      if (body.processo && tribunal) {
-        const dadosCadastrais = obterDetalhesCadastraisDataJud(body.processo, tribunal);
-        if (dadosCadastrais) {
-          if (!reclamante) reclamante = dadosCadastrais.reclamante;
-          if (!reclamado) reclamado = dadosCadastrais.reclamado;
-          if (!vara) vara = dadosCadastrais.vara;
-          if (!tipo) tipo = dadosCadastrais.tipo;
-        }
-
-        const novidades = consultarProcessoDataJud(body.processo, tribunal, null);
-        if (novidades && novidades.length > 0) {
-          const sheetMov = ss.getSheetByName(SHEET_MOVIMENTACOES);
-          novidades.sort((a, b) => new Date(a.dataHora) - new Date(b.dataHora));
-          novidades.forEach(m => {
-            sheetMov.appendRow([new Date(), new Date(m.dataHora), body.processo, m.descricao]);
-          });
-          ultimaData = new Date(novidades[novidades.length - 1].dataHora);
-        }
-      }
-
-      sheet.appendRow([
-        body.processo || "",
-        body.email || "",
-        tribunal || "",
-        ultimaData || "",
-        body.status || "Ativo",
-        body.apelido || "",
-        reclamante,
-        reclamado,
-        vara,
-        tipo || "Cível",
-        body.empresa || ""
-      ]);
-
-      return jsonResponse({
-        success: true,
-        message: "Processo cadastrado com sucesso.",
-        dados: { reclamante, reclamado, vara, tipo }
-      });
-    }
-
-    if (action === "edit") {
-      for (let i = 1; i < data.length; i++) {
-        if (String(data[i][0]).trim() === String(body.processo).trim()) {
-          const row = i + 1;
-          if (body.email !== undefined) sheet.getRange(row, 2).setValue(body.email);
-          if (body.tribunal !== undefined) sheet.getRange(row, 3).setValue(body.tribunal);
-          if (body.status !== undefined) sheet.getRange(row, 5).setValue(body.status);
-          if (body.apelido !== undefined) sheet.getRange(row, 6).setValue(body.apelido);
-          if (body.reclamante !== undefined) sheet.getRange(row, 7).setValue(body.reclamante);
-          if (body.reclamado !== undefined) sheet.getRange(row, 8).setValue(body.reclamado);
-          if (body.vara !== undefined) sheet.getRange(row, 9).setValue(body.vara);
-          if (body.tipo !== undefined) sheet.getRange(row, 10).setValue(body.tipo);
-          if (body.empresa !== undefined) sheet.getRange(row, 11).setValue(body.empresa);
-          return jsonResponse({ success: true, message: "Processo atualizado com sucesso." });
-        }
-      }
-      return jsonResponse({ success: false, error: "Processo não encontrado." });
-    }
-
-    if (action === "delete") {
-      for (let i = 1; i < data.length; i++) {
-        if (String(data[i][0]).trim() === String(body.processo).trim()) {
-          sheet.deleteRow(i + 1);
-          return jsonResponse({ success: true, message: "Processo excluído com sucesso." });
-        }
-      }
-      return jsonResponse({ success: false, error: "Processo não encontrado." });
-    }
-
-    return jsonResponse({ success: false, error: "Ação POST inválida." });
-  } catch (err) {
-    return jsonResponse({ success: false, error: err.toString() });
-  }
-}
-
-/**
- * Atualiza dados cadastrais e histórico inicial de processos antigos
- */
-function atualizarDadosCadastraisAntigos() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheetProc = ss.getSheetByName(SHEET_PROCESSOS);
-  const sheetMov = ss.getSheetByName(SHEET_MOVIMENTACOES);
-  const dados = sheetProc.getDataRange().getValues();
-
-  if (dados.length <= 1) {
-    console.log("Nenhum processo cadastrado.");
-    return;
-  }
-
-  console.log(`Atualizando ${dados.length - 1} processo(s)...`);
-
-  for (let i = 1; i < dados.length; i++) {
-    const row = i + 1;
-    const numProcesso = String(dados[i][0] || "").trim();
-    let tribunal = String(dados[i][2] || "").trim();
-    const ultimaData = dados[i][3];
-
-    if (!numProcesso) continue;
-
-    if (!tribunal) {
-      tribunal = inferirTribunalPorNumero(numProcesso);
-      if (tribunal) sheetProc.getRange(row, 3).setValue(tribunal);
-    }
-
-    if (!tribunal) continue;
-
-    const cad = obterDetalhesCadastraisDataJud(numProcesso, tribunal);
-    if (cad) {
-      if (cad.reclamante) sheetProc.getRange(row, 7).setValue(cad.reclamante);
-      if (cad.reclamado) sheetProc.getRange(row, 8).setValue(cad.reclamado);
-      if (cad.vara) sheetProc.getRange(row, 9).setValue(cad.vara);
-      if (cad.tipo) sheetProc.getRange(row, 10).setValue(cad.tipo);
-    }
-
-    if (!ultimaData || isNaN(new Date(ultimaData).getTime())) {
-      const movs = consultarProcessoDataJud(numProcesso, tribunal, null);
-      if (movs && movs.length > 0) {
-        movs.sort((a, b) => new Date(a.dataHora) - new Date(b.dataHora));
-        movs.forEach(m => {
-          sheetMov.appendRow([new Date(), new Date(m.dataHora), numProcesso, m.descricao]);
-        });
-        sheetProc.getRange(row, 4).setValue(new Date(movs[movs.length - 1].dataHora));
-      }
-    }
-
-    Utilities.sleep(400);
-  }
-
-  console.log("Processos antigos atualizados com sucesso!");
-}
-
-function inferirTribunalPorNumero(processo) {
-  const d = String(processo || "").replace(/\D/g, "");
-  if (d.length < 16) return "";
-  const j = d.substring(13, 14);
-  const tr = d.substring(14, 16);
-
-  if (j === "1") return "STF";
-  if (j === "2") return "CNJ";
-  if (j === "3") return "STJ";
-  if (j === "4") return `TRF${parseInt(tr, 10)}`;
-  if (j === "5") return `TRT${parseInt(tr, 10)}`;
-  if (j === "6") return tr === "00" ? "TSE" : `TRE-${tr}`;
-  if (j === "7") return "STM";
-  if (j === "8") {
-    const tjs = {
-      "01": "TJAC", "02": "TJAL", "03": "TJAP", "04": "TJAM",
-      "05": "TJBA", "06": "TJCE", "07": "TJDFT", "08": "TJES",
-      "09": "TJGO", "10": "TJMA", "11": "TJMT", "12": "TJMS",
-      "13": "TJMG", "14": "TJPA", "15": "TJPB", "16": "TJPR",
-      "17": "TJPE", "18": "TJPI", "19": "TJRJ", "20": "TJRN",
-      "21": "TJRS", "22": "TJRO", "23": "TJRR", "24": "TJSC",
-      "25": "TJSE", "26": "TJSP", "27": "TJTO"
-    };
-    return tjs[tr] || "";
-  }
-  return "";
-}
-
-function inferirTipoProcesso(classeNome, varaNome, numeroProcesso) {
-  const c = String(classeNome || "").toLowerCase();
-  const v = String(varaNome || "").toLowerCase();
-  const d = String(numeroProcesso || "").replace(/\D/g, "");
-  const j = d.length >= 14 ? d.substring(13, 14) : "";
-
-  if (j === "5" || c.includes("trabalh") || v.includes("trabalho") || v.includes("vara do trabalho")) {
-    return "Trabalhista";
-  }
-  if (c.includes("penal") || c.includes("criminal") || c.includes("delito") || 
-      c.includes("inquérito") || c.includes("flagrante") || c.includes("habeas corpus") || 
-      c.includes("execução penal") || v.includes("criminal") || v.includes("delito") || v.includes("penal")) {
-    return "Criminal";
-  }
-  if (c.includes("tribut") || c.includes("execução fiscal") || v.includes("execução fiscal") || v.includes("fiscal")) {
-    return "Tributário";
-  }
-  if (c.includes("previdenci") || v.includes("previdenci")) {
-    return "Previdenciário";
-  }
-  if (j === "6" || c.includes("eleitoral")) {
-    return "Eleitoral";
-  }
-  return "Cível";
-}
-
-function obterDetalhesCadastraisDataJud(processoFormatado, tribunal) {
-  if (!processoFormatado || !tribunal) return null;
-  const numeroLimpo = String(processoFormatado).replace(/\D/g, "");
-  const siglaTribunal = String(tribunal).toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (!numeroLimpo || !siglaTribunal) return null;
-
-  const endpoint = `https://api-publica.datajud.cnj.jus.br/api_publica_${siglaTribunal}/_search`;
-  const payload = {
-    query: { match: { numeroProcesso: numeroLimpo } },
-    sort: [{ "dataHoraUltimaAtualizacao": { "order": "desc" } }]
-  };
-
-  const options = {
-    method: "post",
-    contentType: "application/json",
-    headers: { Authorization: DATAJUD_API_KEY },
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
-
-  try {
-    const response = UrlFetchApp.fetch(endpoint, options);
-    if (response.getResponseCode() !== 200) return null;
-    const json = JSON.parse(response.getContentText());
-    if (!json.hits || json.hits.hits.length === 0) return null;
-
-    const doc = json.hits.hits[0]._source;
-    let vara = "";
-    let reclamante = "";
-    let reclamado = "";
-    let classeNome = (doc.classe && doc.classe.nome) ? doc.classe.nome : "";
-
-    if (doc.orgaoJulgador && doc.orgaoJulgador.nome) {
-      vara = String(doc.orgaoJulgador.nome).trim();
-    } else if (doc.dadosBasicos && doc.dadosBasicos.orgaoJulgador && doc.dadosBasicos.orgaoJulgador.nomeOrgao) {
-      vara = String(doc.dadosBasicos.orgaoJulgador.nomeOrgao).trim();
-    }
-
-    const listaPolos = doc.polo || (doc.dadosBasicos && doc.dadosBasicos.polo) || doc.polos || [];
-    if (Array.isArray(listaPolos) && listaPolos.length > 0) {
-      listaPolos.forEach(p => {
-        const tipoPolo = String(p.polo || p.tipo || "").toUpperCase();
-        const nomes = [];
-        const partes = p.parte || p.partes || [];
-        if (Array.isArray(partes)) {
-          partes.forEach(pt => {
-            const nome = (pt.pessoa && pt.pessoa.nome) || pt.nome || (pt.pessoa && pt.pessoa.nomePessoa) || "";
-            if (nome) nomes.push(String(nome).trim());
-          });
-        }
-        const nomesTexto = nomes.join("; ");
-        if (tipoPolo === "AT" || tipoPolo === "A" || tipoPolo.includes("ATIVO")) {
-          if (!reclamante) reclamante = nomesTexto;
-        } else if (tipoPolo === "PA" || tipoPolo === "P" || tipoPolo.includes("PASSIVO")) {
-          if (!reclamado) reclamado = nomesTexto;
-        }
-      });
-    }
-
-    const tipo = inferirTipoProcesso(classeNome, vara, processoFormatado);
-    return { vara, reclamante, reclamado, tipo };
-  } catch (e) {
-    return null;
-  }
-}
-
-/**
- * Rotina automática que checa movimentações e agrupa alertas para múltiplos e-mails
- */
-function verificarMovimentacoesDataJud() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheetProc = ss.getSheetByName(SHEET_PROCESSOS);
-  const sheetMov = ss.getSheetByName(SHEET_MOVIMENTACOES);
-  const dados = sheetProc.getDataRange().getValues();
-  if (dados.length <= 1) return;
-
-  const notificacoesPorEmail = {};
-
-  for (let i = 1; i < dados.length; i++) {
-    const row = i + 1;
-    const numProcesso = String(dados[i][0] || "").trim();
-    const emailDestino = String(dados[i][1] || "").trim();
-    let tribunal = String(dados[i][2] || "").trim();
-    const ultimaDataReg = dados[i][3] ? new Date(dados[i][3]) : null;
-    const status = String(dados[i][4] || "").trim();
-    const apelido = String(dados[i][5] || numProcesso).trim();
-
-    if (status.toLowerCase() !== "ativo" || !numProcesso) continue;
-
-    if (!tribunal) {
-      tribunal = inferirTribunalPorNumero(numProcesso);
-      if (tribunal) sheetProc.getRange(row, 3).setValue(tribunal);
-    }
-    if (!tribunal) continue;
-
-    const recAtual = dados[i][6];
-    const respAtual = dados[i][7];
-    const varaAtual = dados[i][8];
-    const tipoAtual = dados[i][9];
-
-    if (!recAtual || !respAtual || !varaAtual || !tipoAtual) {
-      const cad = obterDetalhesCadastraisDataJud(numProcesso, tribunal);
-      if (cad) {
-        if (!recAtual && cad.reclamante) sheetProc.getRange(row, 7).setValue(cad.reclamante);
-        if (!respAtual && cad.reclamado) sheetProc.getRange(row, 8).setValue(cad.reclamado);
-        if (!varaAtual && cad.vara) sheetProc.getRange(row, 9).setValue(cad.vara);
-        if (!tipoAtual && cad.tipo) sheetProc.getRange(row, 10).setValue(cad.tipo);
-      }
-    }
-
-    try {
-      const novidades = consultarProcessoDataJud(numProcesso, tribunal, ultimaDataReg);
-      if (novidades && novidades.length > 0) {
-        novidades.sort((a, b) => new Date(a.dataHora) - new Date(b.dataHora));
-        novidades.forEach(m => {
-          sheetMov.appendRow([new Date(), new Date(m.dataHora), numProcesso, m.descricao]);
-        });
-        const maisRecente = novidades[novidades.length - 1];
-        sheetProc.getRange(row, 4).setValue(new Date(maisRecente.dataHora));
-
-        // Múltiplos e-mails separados por vírgula ou ponto e vírgula
-        if (emailDestino && emailDestino.includes("@")) {
-          const destinatarios = emailDestino
-            .split(/[;,]/)
-            .map(e => e.trim())
-            .filter(e => e.includes("@"));
-
-          destinatarios.forEach(dest => {
-            if (!notificacoesPorEmail[dest]) notificacoesPorEmail[dest] = [];
-            notificacoesPorEmail[dest].push({
-              apelido,
-              processo: numProcesso,
-              tribunal,
-              tipo: tipoAtual || "Cível",
-              movimentacoes: novidades
-            });
-          });
-        }
-      }
-    } catch (err) {
-      console.error(`Erro ao consultar ${numProcesso}: ${err.message}`);
-    }
-  }
-
-  dispararEmailsNotificacao(notificacoesPorEmail);
-}
-
-function consultarProcessoDataJud(processoFormatado, tribunal, ultimaDataRegistrada) {
-  if (!processoFormatado || !tribunal) return null;
-  const numeroLimpo = String(processoFormatado).replace(/\D/g, "");
-  const siglaTribunal = String(tribunal).toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (!numeroLimpo || !siglaTribunal) return null;
-
-  const endpoint = `https://api-publica.datajud.cnj.jus.br/api_publica_${siglaTribunal}/_search`;
-  const payload = {
-    query: { match: { numeroProcesso: numeroLimpo } },
-    sort: [{ "dataHoraUltimaAtualizacao": { "order": "desc" } }]
-  };
-
-  const options = {
-    method: "post",
-    contentType: "application/json",
-    headers: { Authorization: DATAJUD_API_KEY },
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
-
-  try {
-    const response = UrlFetchApp.fetch(endpoint, options);
-    if (response.getResponseCode() !== 200) return null;
-    const json = JSON.parse(response.getContentText());
-    if (!json.hits || json.hits.hits.length === 0) return null;
-
-    const doc = json.hits.hits[0]._source;
-    const movimentos = doc.movimentos || [];
-
-    let lista = movimentos.map(m => {
-      const partesTexto = [];
-      if (m.nome && String(m.nome).trim()) partesTexto.push(String(m.nome).trim());
-      if (m.descricao && String(m.descricao).trim() && !partesTexto.includes(String(m.descricao).trim())) partesTexto.push(String(m.descricao).trim());
-      if (m.observacao && String(m.observacao).trim() && !partesTexto.includes(String(m.observacao).trim())) partesTexto.push(String(m.observacao).trim());
-
-      if (m.complementosTabelados && Array.isArray(m.complementosTabelados)) {
-        m.complementosTabelados.forEach(c => {
-          const nomeCompl = (c.nome || "").trim();
-          const descCompl = (c.descricao || "").trim();
-          const valorCompl = (c.valor || "").trim();
-          const textoRelevante = descCompl || valorCompl || nomeCompl;
-          if (textoRelevante && !partesTexto.includes(textoRelevante)) {
-            if (nomeCompl && descCompl && nomeCompl !== descCompl) partesTexto.push(`${nomeCompl}: ${descCompl}`);
-            else partesTexto.push(textoRelevante);
-          }
-        });
-      }
-
-      return {
-        dataHora: m.dataHora,
-        descricao: partesTexto.length > 0 ? partesTexto.join(" — ") : "Movimentação registrada"
-      };
-    });
-
-    lista.sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
-    if (ultimaDataRegistrada && !isNaN(new Date(ultimaDataRegistrada).getTime())) {
-      return lista.filter(m => new Date(m.dataHora).getTime() > new Date(ultimaDataRegistrada).getTime());
-    }
-    return lista.slice(0, 5);
-  } catch (e) {
-    return null;
-  }
-}
-
-function dispararEmailsNotificacao(agrupamento) {
-  for (const email in agrupamento) {
-    const lista = agrupamento[email];
-    let corpoHtml = `
-      <div style="font-family: sans-serif; color: #1e293b; max-width: 600px;">
-        <h2 style="color: #2563eb;">Atualização de Processos Judiciais</h2>
-        <p>Foram identificadas novas movimentações em processos vinculados a você:</p>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
-    `;
-
-    lista.forEach(item => {
-      const d = String(item.processo).replace(/\D/g, "");
-      let linkTribunal = `https://comunica.pje.jus.br/consulta?numeroUnico=${d}`;
-
-      corpoHtml += `
-        <div style="margin-bottom: 20px;">
-          <h3 style="margin: 0; font-size: 15px; color: #0f172a;">${item.apelido} <span style="font-size: 11px; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; color: #475569;">${item.tipo || 'Cível'}</span></h3>
-          <span style="font-size: 12px; color: #64748b; font-family: monospace;">${item.processo}</span>
-          <p style="margin: 4px 0 8px 0;"><a href="${linkTribunal}" target="_blank" style="color: #2563eb; font-size: 12px; text-decoration: none;">🔗 Abrir autos no Tribunal</a></p>
-          <ul style="margin: 8px 0; padding-left: 20px; font-size: 13px;">
-      `;
-
-      item.movimentacoes.forEach(m => {
-        const dataFormatada = Utilities.formatDate(new Date(m.dataHora), "GMT-03:00", "dd/MM/yyyy HH:mm");
-        corpoHtml += `<li style="margin-bottom: 6px;"><strong>${dataFormatada}:</strong> ${m.descricao}</li>`;
-      });
-
-      corpoHtml += `</ul></div>`;
-    });
-
-    corpoHtml += `
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 16px 0;" />
-        <p style="font-size: 11px; color: #94a3b8;">Notificação automática gerada pelo IAZ Jud.</p>
+  </script>
+  <style>
+    summary::-webkit-details-marker { display: none; }
+    summary { list-style: none; }
+    details[open] > summary .chevron-icon { transform: rotate(180deg); }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans min-h-screen flex flex-col md:flex-row transition-colors duration-150">
+
+  <!-- Overlay Mobile -->
+  <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden md:hidden"></div>
+
+  <!-- Barra Lateral (Sidebar) -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
+    <div>
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <img id="sideHeaderLogo" src="" alt="Logo" onerror="this.classList.add('hidden')" class="hidden h-9 w-auto max-w-[48px] object-contain rounded bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800">
+          <div class="min-w-0">
+            <h1 class="font-bold text-sm text-slate-900 dark:text-slate-100 leading-tight">IAZ Jud</h1>
+            <p id="sideHeaderEmpresa" class="text-[11px] text-blue-600 dark:text-blue-400 font-medium truncate">Monitoramento</p>
+          </div>
+        </div>
+        <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg p-1">✕</button>
       </div>
-    `;
 
-    MailApp.sendEmail({
-      to: email,
-      subject: `[Alerta Judicial] Novas movimentações em ${lista.length} processo(s)`,
-      htmlBody: corpoHtml
+      <nav class="p-3 space-y-1.5 text-xs font-medium">
+        <button onclick="fecharSidebar()" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-600/10 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 text-left">
+          <span>📁</span>
+          <span>Painel de Processos</span>
+        </button>
+
+        <button onclick="openEmpresaModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition">
+          <span>🏢</span>
+          <span>Cadastro de Empresa</span>
+        </button>
+
+        <button onclick="openProcessModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition">
+          <span>⚖️</span>
+          <span>Cadastro de Processo</span>
+        </button>
+
+        <button onclick="openConfigModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition">
+          <span>⚙️</span>
+          <span>Configurações</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="p-3 border-t border-slate-200 dark:border-slate-800">
+      <button id="btnSideSync" onclick="sincronizarDataJud()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow transition">
+        <span id="sideSyncIcon">⚡</span>
+        <span id="sideSyncText">Checar DataJud</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Área Principal -->
+  <div class="flex-1 md:ml-64 flex flex-col min-w-0">
+    <header class="bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-sm">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-3">
+          <button onclick="toggleSidebar()" class="md:hidden p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+            ☰
+          </button>
+          <img id="topHeaderLogo" src="" alt="Logo" onerror="this.classList.add('hidden')" class="hidden md:block h-8 w-auto max-w-[42px] object-contain rounded bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800">
+          <div>
+            <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100">Painel de Processos</h2>
+            <p id="topHeaderSubtitulo" class="text-[11px] text-slate-500 dark:text-slate-400">Visão Geral dos Autos</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="openEmpresaModal()" class="hidden sm:flex bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium px-2.5 py-1.5 rounded-lg items-center gap-1">
+            <span>🏢</span> Empresa
+          </button>
+          <button onclick="openProcessModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-1 shadow">
+            <span>+</span> Novo Processo
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl w-full mx-auto px-4 py-4 space-y-4 flex-1">
+      <div class="flex flex-col sm:flex-row gap-2">
+        <select id="empresaFilter" onchange="aoFiltrarEmpresa()" 
+          class="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm sm:w-56 font-medium">
+          <option value="">Todas as Empresas</option>
+        </select>
+
+        <div class="flex gap-2 flex-1">
+          <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por número, tipo, partes, vara, empresa ou e-mail..." 
+            class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-lg text-xs sm:text-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+          <button onclick="carregarProcessos()" title="Atualizar Lista" class="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-800 shadow-sm text-slate-600 dark:text-slate-300">
+            🔄
+          </button>
+        </div>
+      </div>
+
+      <div id="processosContainer" class="space-y-3">
+        <div class="text-center py-12 text-slate-500 text-sm">Carregando processos...</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: Gerenciar Empresa -->
+  <div id="empresaModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Gerenciar Empresas</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Cadastre suas filiais ou clientes corporativos</p>
+        </div>
+        <button onclick="closeEmpresaModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1">✕</button>
+      </div>
+
+      <form id="empresaForm" onsubmit="salvarEmpresa(event)" class="space-y-3 bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+        <h4 class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">Nova Empresa</h4>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Código (Auto)</label>
+            <input type="text" id="campoEmpCodigo" readonly placeholder="Gerando..."
+              class="w-full px-2.5 py-1.5 bg-slate-200 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-blue-600 dark:text-blue-400 font-mono cursor-not-allowed select-none focus:outline-none">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nome da Empresa*</label>
+            <input type="text" id="campoEmpNome" required placeholder="Ex: IAZ Transportes LTDA"
+              class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">Logotipo da Empresa</label>
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-1">Subir do dispositivo:</label>
+            <input type="file" id="campoEmpFile" accept="image/*" onchange="processarArquivoLogo(event)"
+              class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-700 dark:file:text-slate-200 hover:file:bg-slate-300 dark:hover:file:bg-slate-700 cursor-pointer">
+          </div>
+
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-1">Ou cole a URL direta / link do Google Drive:</label>
+            <input type="text" id="campoEmpLogo" oninput="aoDigitarLogoUrl(this.value)" placeholder="https://..."
+              class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none font-mono">
+          </div>
+
+          <div id="logoPreviewContainer" class="hidden mt-2 p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <img id="logoPreviewImg" src="" class="h-8 w-auto max-w-[60px] object-contain rounded bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-700">
+              <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">Logotipo pronto</span>
+            </div>
+            <button type="button" onclick="limparLogoForm()" class="text-xs text-red-500 hover:text-red-400">Remover</button>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-1">
+          <button type="submit" id="btnSalvarEmp" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium shadow">
+            Adicionar Empresa
+          </button>
+        </div>
+      </form>
+
+      <div>
+        <h4 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Empresas Cadastradas</h4>
+        <div id="empresasListaContainer" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+          <p class="text-xs text-slate-500 py-3 text-center">Nenhuma empresa encontrada.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Adicionar / Editar Processo -->
+  <div id="processModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <h3 id="modalTitle" class="text-base font-bold text-slate-900 dark:text-slate-100 mb-4">Novo Processo</h3>
+      <form id="processForm" onsubmit="salvarProcesso(event)" class="space-y-3">
+        <input type="hidden" id="formMode" value="add">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Empresa Vinculada*</label>
+          <select id="campoEmpresa" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">Selecione uma empresa...</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Número do Processo (CNJ)*</label>
+          <input type="text" id="campoProcesso" required oninput="aoDigitarProcesso(this.value)" placeholder="0000000-00.0000.0.00.0000"
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 outline-none font-mono">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Apelido/Identificador</label>
+            <input type="text" id="campoApelido" placeholder="Ex: Causa Cível"
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tribunal (Automático)</label>
+            <input type="text" id="campoTribunal" placeholder="TJCE, TRF5..."
+              class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tipo de Processo</label>
+            <select id="campoTipo" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="Cível">Cível</option>
+              <option value="Trabalhista">Trabalhista</option>
+              <option value="Criminal">Criminal</option>
+              <option value="Tributário">Tributário</option>
+              <option value="Previdenciário">Previdenciário</option>
+              <option value="Eleitoral">Eleitoral</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Status</label>
+            <select id="campoStatus" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="Ativo">Ativo</option>
+              <option value="Arquivado">Arquivado</option>
+              <option value="Suspenso">Suspenso</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Reclamante (Autor)</label>
+            <input type="text" id="campoReclamante" placeholder="DataJud ou manual"
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Reclamado (Réu)</label>
+            <input type="text" id="campoReclamado" placeholder="DataJud ou manual"
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Vara / Unidade Judiciária</label>
+          <input type="text" id="campoVara" placeholder="Ex: 2ª Vara Cível de Fortaleza"
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <!-- Múltiplos e-mails de notificação -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">E-mails de Notificação (separe por vírgula ou ponto e vírgula)</label>
+          <input type="text" id="campoEmail" placeholder="advogado@empresa.com, financeiro@empresa.com"
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-4">
+          <button type="button" onclick="closeProcessModal()" class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Cancelar</button>
+          <button type="submit" id="btnSubmitForm" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium shadow">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Histórico de Movimentações -->
+  <div id="movModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex items-start justify-between pb-3 border-b border-slate-200 dark:border-slate-800 gap-2">
+        <div class="flex-1">
+          <h3 class="text-base font-bold text-slate-900 dark:text-slate-100" id="movProcessoTitulo">Movimentações</h3>
+          <div class="flex items-center gap-2 mt-1">
+            <span class="text-xs text-slate-500 dark:text-slate-400 font-mono" id="movProcessoSubtitulo"></span>
+            <button onclick="copiarProcesso(document.getElementById('movProcessoSubtitulo').innerText)" 
+              class="text-[11px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 transition">
+              📋 Copiar
+            </button>
+          </div>
+          <div id="movLinkTribunalContainer" class="mt-2.5 flex items-center gap-2 flex-wrap"></div>
+        </div>
+        <button onclick="closeMovModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1">✕</button>
+      </div>
+      <div id="movimentacoesLista" class="overflow-y-auto py-3 space-y-3 flex-1 pr-1">
+        <p class="text-center text-xs text-slate-500 py-6">Carregando movimentações...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Configurações & Tema -->
+  <div id="configModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4">
+      <div>
+        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">Configurações do Aplicativo</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Ajuste a aparência e a conexão com a planilha.</p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Aparência (Tema)</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="alterarTema('dark')" id="btnTemaDark" 
+            class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition">
+            <span>🌙</span> Modo Escuro
+          </button>
+          <button type="button" onclick="alterarTema('light')" id="btnTemaLight" 
+            class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition">
+            <span>☀️</span> Modo Claro
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">URL da API (Apps Script)</label>
+        <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec"
+          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-xs font-mono text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeConfigModal()" class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Fechar</button>
+        <button onclick="salvarConfiguracoes()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_API_URL = "SUA_URL_DO_WEBAPP_AQUI";
+    let API_URL = localStorage.getItem("PROCESSOS_API_URL") || DEFAULT_API_URL;
+    let processosData = [];
+    let empresasData = [];
+    let logoTempBase64 = "";
+
+    window.addEventListener("DOMContentLoaded", () => {
+      atualizarBotoesTema();
+      if (!API_URL || API_URL === "SUA_URL_DO_WEBAPP_AQUI") {
+        openConfigModal();
+      } else {
+        carregarProcessos();
+      }
     });
-  }
-}
 
-function jsonResponse(data) {
-  return ContentService.createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+    function alterarTema(tema) {
+      localStorage.setItem("APP_THEME", tema);
+      const meta = document.getElementById("metaThemeColor");
+      if (tema === "dark") {
+        document.documentElement.classList.add("dark");
+        if (meta) meta.setAttribute("content", "#090d16");
+      } else {
+        document.documentElement.classList.remove("dark");
+        if (meta) meta.setAttribute("content", "#f8fafc");
+      }
+      atualizarBotoesTema();
+    }
+
+    function atualizarBotoesTema() {
+      const temaAtual = localStorage.getItem("APP_THEME") || "dark";
+      const btnDark = document.getElementById("btnTemaDark");
+      const btnLight = document.getElementById("btnTemaLight");
+
+      if (!btnDark || !btnLight) return;
+
+      if (temaAtual === "dark") {
+        btnDark.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-blue-500 bg-blue-500/10 text-blue-400 text-xs font-semibold";
+        btnLight.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800";
+      } else {
+        btnLight.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-blue-600 bg-blue-50 text-blue-600 text-xs font-semibold";
+        btnDark.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800";
+      }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      const overlay = document.getElementById("sidebarOverlay");
+      sidebar.classList.toggle("-translate-x-full");
+      overlay.classList.toggle("hidden");
+    }
+
+    function fecharSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      const overlay = document.getElementById("sidebarOverlay");
+      sidebar.classList.add("-translate-x-full");
+      overlay.classList.add("hidden");
+    }
+
+    function tratarUrlImagem(url) {
+      if (!url) return "";
+      const trimmed = url.trim();
+      if (trimmed.startsWith("data:image")) return trimmed;
+      const driveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/id=([a-zA-Z0-9_-]+)/);
+      if (driveMatch && driveMatch[1]) {
+        return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
+      }
+      return trimmed;
+    }
+
+    function processarArquivoLogo(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 120;
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          logoTempBase64 = canvas.toDataURL("image/png");
+          document.getElementById("campoEmpLogo").value = "";
+          exibirPreviewLogo(logoTempBase64);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function aoDigitarLogoUrl(val) {
+      if (val.trim()) {
+        logoTempBase64 = "";
+        document.getElementById("campoEmpFile").value = "";
+        exibirPreviewLogo(tratarUrlImagem(val));
+      } else {
+        document.getElementById("logoPreviewContainer").classList.add("hidden");
+      }
+    }
+
+    function exibirPreviewLogo(src) {
+      const container = document.getElementById("logoPreviewContainer");
+      const img = document.getElementById("logoPreviewImg");
+      img.src = src;
+      container.classList.remove("hidden");
+    }
+
+    function limparLogoForm() {
+      logoTempBase64 = "";
+      document.getElementById("campoEmpFile").value = "";
+      document.getElementById("campoEmpLogo").value = "";
+      document.getElementById("logoPreviewContainer").classList.add("hidden");
+    }
+
+    function gerarProximoCodigoEmpresa() {
+      if (!empresasData || empresasData.length === 0) return "EMP-01";
+      const numeros = empresasData.map(e => {
+        const num = parseInt(String(e.codigo).replace(/\D/g, ""), 10);
+        return isNaN(num) ? 0 : num;
+      });
+      const maxNum = Math.max(0, ...numeros);
+      return `EMP-${String(maxNum + 1).padStart(2, "0")}`;
+    }
+
+    async function apiRequest(action, data = null, method = "GET") {
+      const url = method === "GET" 
+        ? `${API_URL}?action=${encodeURIComponent(action)}${data ? '&' + new URLSearchParams(data).toString() : ''}`
+        : API_URL;
+
+      const opts = { method, redirect: "follow" };
+      if (method === "POST") {
+        opts.headers = { "Content-Type": "text/plain;charset=utf-8" };
+        opts.body = JSON.stringify({ action, ...data });
+      }
+
+      const res = await fetch(url, opts);
+      return await res.json();
+    }
+
+    async function carregarProcessos() {
+      const container = document.getElementById("processosContainer");
+      container.innerHTML = `<div class="text-center py-12 text-slate-500 text-sm">Carregando dados...</div>`;
+      try {
+        const res = await apiRequest("list");
+        if (res.success) {
+          processosData = res.data;
+          empresasData = res.empresas || [];
+          atualizarSeletoresEmpresa();
+          renderizarListaEmpresasModal();
+          atualizarIdentidadeVisual();
+          renderProcessos();
+        } else {
+          container.innerHTML = `<div class="text-center text-red-500 text-sm py-4">Erro: ${res.error}</div>`;
+        }
+      } catch (err) {
+        container.innerHTML = `<div class="text-center text-red-500 text-sm py-4">Falha ao conectar com o script. Verifique as configurações.</div>`;
+      }
+    }
+
+    function atualizarSeletoresEmpresa() {
+      const filtro = document.getElementById("empresaFilter");
+      const campo = document.getElementById("campoEmpresa");
+      const valorAtual = filtro.value;
+
+      filtro.innerHTML = `<option value="">Todas as Empresas</option>` + empresasData.map(e => `
+        <option value="${e.codigo}">${e.nome || e.codigo}</option>
+      `).join('');
+      filtro.value = valorAtual;
+
+      campo.innerHTML = `<option value="">Selecione uma empresa...</option>` + empresasData.map(e => `
+        <option value="${e.codigo}">${e.codigo} - ${e.nome}</option>
+      `).join('');
+    }
+
+    function renderizarListaEmpresasModal() {
+      const container = document.getElementById("empresasListaContainer");
+      if (empresasData.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500 py-3 text-center">Nenhuma empresa cadastrada na planilha.</p>`;
+        return;
+      }
+
+      container.innerHTML = empresasData.map(e => {
+        const logoUrl = tratarUrlImagem(e.logo);
+        return `
+        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+          <div class="flex items-center gap-2 min-w-0">
+            ${logoUrl ? `<img src="${logoUrl}" onerror="this.src=''; this.style.display='none'" class="h-6 w-6 object-contain rounded bg-white dark:bg-slate-950 p-0.5 border border-slate-200 dark:border-slate-800">` : `<span class="text-base">🏢</span>`}
+            <div class="min-w-0">
+              <p class="font-bold text-slate-800 dark:text-slate-200 truncate">${e.nome}</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">Código: ${e.codigo}</p>
+            </div>
+          </div>
+          <button onclick="excluirEmpresa('${e.codigo}')" class="text-red-500 hover:text-red-400 p-1 text-xs">🗑️</button>
+        </div>
+        `;
+      }).join('');
+    }
+
+    function aoFiltrarEmpresa() {
+      atualizarIdentidadeVisual();
+      renderProcessos();
+    }
+
+    function atualizarIdentidadeVisual() {
+      const codSelecionado = document.getElementById("empresaFilter").value;
+      let emp = null;
+
+      if (codSelecionado) {
+        emp = empresasData.find(e => String(e.codigo).trim() === String(codSelecionado).trim());
+      } else if (empresasData.length > 0) {
+        emp = empresasData[0];
+      }
+
+      const sideLogo = document.getElementById("sideHeaderLogo");
+      const sideNome = document.getElementById("sideHeaderEmpresa");
+      const topLogo = document.getElementById("topHeaderLogo");
+      const topSub = document.getElementById("topHeaderSubtitulo");
+
+      const logoUrl = emp ? tratarUrlImagem(emp.logo) : "";
+
+      if (logoUrl) {
+        sideLogo.src = logoUrl;
+        sideLogo.classList.remove("hidden");
+        topLogo.src = logoUrl;
+        topLogo.classList.remove("hidden");
+      } else {
+        sideLogo.classList.add("hidden");
+        topLogo.classList.add("hidden");
+      }
+
+      if (emp && emp.nome) {
+        sideNome.innerText = emp.nome;
+        topSub.innerText = emp.nome;
+      } else {
+        sideNome.innerText = "Monitoramento";
+        topSub.innerText = "Visão Geral dos Autos";
+      }
+    }
+
+    function obterNomeEmpresa(cod) {
+      if (!cod) return "";
+      const emp = empresasData.find(e => String(e.codigo).trim() === String(cod).trim());
+      return emp ? (emp.nome || emp.codigo) : cod;
+    }
+
+    async function salvarEmpresa(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btnSalvarEmp");
+      btn.innerText = "Salvando...";
+      btn.disabled = true;
+
+      const logoFinal = logoTempBase64 || tratarUrlImagem(document.getElementById("campoEmpLogo").value);
+
+      const payload = {
+        codigo: document.getElementById("campoEmpCodigo").value.trim(),
+        nome: document.getElementById("campoEmpNome").value.trim(),
+        logo: logoFinal
+      };
+
+      try {
+        const res = await apiRequest("add_empresa", payload, "POST");
+        if (res.success) {
+          limparLogoForm();
+          document.getElementById("empresaForm").reset();
+          await carregarProcessos();
+          document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
+        } else {
+          alert("Erro: " + res.error);
+        }
+      } catch (err) {
+        alert("Erro ao salvar empresa.");
+      } finally {
+        btn.innerText = "Adicionar Empresa";
+        btn.disabled = false;
+      }
+    }
+
+    async function excluirEmpresa(cod) {
+      if (!confirm(`Deseja realmente excluir a empresa ${cod}?`)) return;
+      try {
+        const res = await apiRequest("delete_empresa", { codigo: cod }, "POST");
+        if (res.success) {
+          await carregarProcessos();
+          document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
+        } else {
+          alert("Erro ao excluir: " + res.error);
+        }
+      } catch (err) {
+        alert("Erro na requisição.");
+      }
+    }
+
+    function calcularDiasDesde(dataStr) {
+      if (!dataStr) return "Sem data";
+      const dataMov = new Date(dataStr);
+      if (isNaN(dataMov.getTime())) return "Sem data";
+      
+      const hoje = new Date();
+      const hojeZero = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
+      const movZero = new Date(dataMov.getFullYear(), dataMov.getMonth(), dataMov.getDate()).getTime();
+      
+      const diffMs = hojeZero - movZero;
+      const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffDias <= 0) return "Hoje";
+      if (diffDias === 1) return "Há 1 dia";
+      return `Há ${diffDias} dias`;
+    }
+
+    function copiarProcesso(texto) {
+      navigator.clipboard.writeText(texto.trim()).then(() => {
+        alert("Número copiado para a área de transferência!");
+      });
+    }
+
+    function obterLinksTribunal(numProcesso, tribunal) {
+      const d = String(numProcesso).replace(/\D/g, "");
+      const trib = String(tribunal || "").toUpperCase().trim();
+      const links = [];
+
+      if (d.length === 20) {
+        const numDigAno = `${d.slice(0, 7)}-${d.slice(7, 9)}.${d.slice(9, 13)}`;
+        const j = d.slice(13, 14);
+        const tr = d.slice(14, 16);
+        const foro = d.slice(16, 20);
+        const cnjFormatado = `${numDigAno}.${j}.${tr}.${foro}`;
+
+        if (trib === "TJCE") {
+          links.push({
+            nome: "e-SAJ TJCE (1º Grau)",
+            url: `https://esaj.tjce.jus.br/cpopg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&numeroDigitoAnoUnificado=${encodeURIComponent(numDigAno)}&foroNumeroUnificado=${encodeURIComponent(foro)}&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(cnjFormatado)}`
+          });
+          links.push({
+            nome: "e-SAJ TJCE (2º Grau)",
+            url: `https://esaj.tjce.jus.br/cposg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&numeroDigitoAnoUnificado=${encodeURIComponent(numDigAno)}&foroNumeroUnificado=${encodeURIComponent(foro)}&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(cnjFormatado)}`
+          });
+          links.push({
+            nome: "PJe TJCE",
+            url: "https://pje.tjce.jus.br/pje/ConsultaPublica/listView.seam"
+          });
+        } else if (trib === "TJSP") {
+          links.push({
+            nome: "e-SAJ TJSP (1º Grau)",
+            url: `https://esaj.tjsp.jus.br/cpopg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&numeroDigitoAnoUnificado=${encodeURIComponent(numDigAno)}&foroNumeroUnificado=${encodeURIComponent(foro)}&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(cnjFormatado)}`
+          });
+        } else if (trib.startsWith("TRF")) {
+          const numReg = trib.replace("TRF", "");
+          links.push({
+            nome: `PJe ${trib}`,
+            url: `https://pje.trf${numReg}.jus.br/pje/ConsultaPublica/listView.seam`
+          });
+        } else if (trib.startsWith("TRT")) {
+          const numReg = trib.replace("TRT", "");
+          links.push({
+            nome: `PJe ${trib}`,
+            url: `https://pje.trt${numReg}.jus.br/consultaprocessual/detalhe-processo/${encodeURIComponent(cnjFormatado)}`
+          });
+        }
+      }
+
+      links.push({
+        nome: "CNJ (Comunica PJe)",
+        url: `https://comunica.pje.jus.br/consulta?numeroUnico=${d}`
+      });
+
+      return links;
+    }
+
+    function renderProcessos() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      const empresaFiltro = document.getElementById("empresaFilter").value;
+      const container = document.getElementById("processosContainer");
+      
+      const filtrados = processosData.filter(p => {
+        const matchesEmpresa = !empresaFiltro || String(p.empresa || '').trim() === String(empresaFiltro).trim();
+        const nomeEmp = obterNomeEmpresa(p.empresa).toLowerCase();
+        
+        const matchesQuery = 
+          (p.processo || '').toLowerCase().includes(query) ||
+          (p.apelido || '').toLowerCase().includes(query) ||
+          (p.tribunal || '').toLowerCase().includes(query) ||
+          (p.tipo || '').toLowerCase().includes(query) ||
+          (p.reclamante || '').toLowerCase().includes(query) ||
+          (p.reclamado || '').toLowerCase().includes(query) ||
+          (p.vara || '').toLowerCase().includes(query) ||
+          (p.email || '').toLowerCase().includes(query) ||
+          nomeEmp.includes(query);
+
+        return matchesEmpresa && matchesQuery;
+      });
+
+      if (filtrados.length === 0) {
+        container.innerHTML = `<div class="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-slate-500 text-sm shadow-sm">Nenhum processo encontrado.</div>`;
+        return;
+      }
+
+      const grupos = {};
+      filtrados.forEach(p => {
+        const tipo = (p.tipo && p.tipo.trim()) ? p.tipo.trim() : "Cível";
+        if (!grupos[tipo]) grupos[tipo] = [];
+        grupos[tipo].push(p);
+      });
+
+      const ordemTipos = ["Trabalhista", "Cível", "Criminal", "Tributário", "Previdenciário", "Eleitoral", "Outro"];
+      const tiposOrdenados = Object.keys(grupos).sort((a, b) => {
+        const idxA = ordemTipos.indexOf(a);
+        const idxB = ordemTipos.indexOf(b);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return a.localeCompare(b);
+      });
+
+      container.innerHTML = tiposOrdenados.map(tipo => {
+        const listaDoTipo = grupos[tipo];
+
+        listaDoTipo.sort((a, b) => {
+          const tA = a.ultimaData ? new Date(a.ultimaData).getTime() : 0;
+          const tB = b.ultimaData ? new Date(b.ultimaData).getTime() : 0;
+          return tB - tA;
+        });
+
+        const total = listaDoTipo.length;
+
+        let icone = "📁";
+        const tLow = tipo.toLowerCase();
+        if (tLow.includes("trabalh")) icone = "💼";
+        else if (tLow.includes("crim")) icone = "🚨";
+        else if (tLow.includes("tribut")) icone = "🏛️";
+        else if (tLow.includes("previd")) icone = "🛡️";
+        else if (tLow.includes("cív") || tLow.includes("civ")) icone = "⚖️";
+        else if (tLow.includes("eleit")) icone = "🗳️";
+
+        const htmlProcessos = listaDoTipo.map(p => {
+          const tempoDesde = calcularDiasDesde(p.ultimaData);
+          const dataFormatada = p.ultimaData ? new Date(p.ultimaData).toLocaleDateString('pt-BR') : 'Sem registro';
+          const linksTribunal = obterLinksTribunal(p.processo, p.tribunal);
+          const linkPrincipal = linksTribunal[0];
+          const nomeEmpresa = obterNomeEmpresa(p.empresa);
+
+          return `
+          <details class="group/item bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl overflow-hidden transition shadow-sm mb-2.5">
+            <summary class="cursor-pointer select-none p-3.5 sm:p-4 flex items-center justify-between gap-3 bg-white dark:bg-slate-950 group-hover/item:bg-slate-50 dark:group-hover/item:bg-slate-900/50">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap mb-1">
+                  <span class="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">${p.apelido || 'Sem apelido'}</span>
+                  ${nomeEmpresa ? `<span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-slate-100 dark:bg-slate-800 text-blue-700 dark:text-blue-300 border border-slate-200 dark:border-slate-700">🏢 ${nomeEmpresa}</span>` : ''}
+                  ${p.tribunal ? `<span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60">${p.tribunal}</span>` : ''}
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-mono truncate select-all">${p.processo}</p>
+              </div>
+
+              <div class="flex items-center gap-2.5 flex-shrink-0">
+                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80">
+                  ⏱️ ${tempoDesde}
+                </span>
+                <svg class="chevron-icon w-4 h-4 text-slate-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </summary>
+
+            <div class="px-4 pb-4 pt-2 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40 space-y-3">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 text-xs font-semibold rounded ${
+                    p.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                  }">${p.status || 'Ativo'}</span>
+                  <span class="text-[11px] text-slate-500 dark:text-slate-400">Última data: <strong class="text-slate-800 dark:text-slate-200">${dataFormatada}</strong></span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button onclick='event.stopPropagation(); abrirEditar(${JSON.stringify(p)})' 
+                    class="p-1.5 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md text-xs transition">✏️ Editar</button>
+                  <button onclick='event.stopPropagation(); excluirProcesso("${p.processo}")' 
+                    class="p-1.5 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md text-xs transition">🗑️ Excluir</button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg shadow-sm">
+                <div class="sm:col-span-2">
+                  <span class="text-slate-500 font-semibold">🏛️ Vara:</span> 
+                  <span class="text-slate-800 dark:text-slate-200">${p.vara || '<span class="text-slate-400 italic">Não informada</span>'}</span>
+                </div>
+                <div>
+                  <span class="text-slate-500 font-semibold">👤 Reclamante:</span> 
+                  <span class="text-slate-800 dark:text-slate-200">${p.reclamante || '<span class="text-slate-400 italic">Não informado</span>'}</span>
+                </div>
+                <div>
+                  <span class="text-slate-500 font-semibold">🏢 Reclamado:</span> 
+                  <span class="text-slate-800 dark:text-slate-200">${p.reclamado || '<span class="text-slate-400 italic">Não informado</span>'}</span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-850 flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                  <span class="text-xs text-slate-500 truncate max-w-[220px]" title="${p.email || ''}">✉️ ${p.email || 'Sem e-mail'}</span>
+                  <a href="${linkPrincipal.url}" target="_blank" onclick="event.stopPropagation()"
+                    class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                    🔗 Abrir no ${linkPrincipal.nome}
+                  </a>
+                </div>
+                <button onclick='event.stopPropagation(); verMovimentacoes("${p.processo}", "${p.apelido || p.processo}", "${p.tribunal || ""}")' 
+                  class="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition">
+                  Ver Histórico Completo →
+                </button>
+              </div>
+            </div>
+          </details>
+          `;
+        }).join('');
+
+        return `
+        <details class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm transition">
+          <summary class="cursor-pointer select-none px-4 py-3.5 flex items-center justify-between bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 border-b border-transparent group-open:border-slate-200 dark:group-open:border-slate-800 transition">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">${icone}</span>
+              <span class="font-bold text-sm text-slate-900 dark:text-slate-100">${tipo}</span>
+              <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80">
+                ${total} ${total === 1 ? 'processo' : 'processos'}
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500 group-open:hidden">Abrir lista</span>
+              <svg class="chevron-icon w-4 h-4 text-slate-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </summary>
+          <div class="p-3 bg-slate-100/60 dark:bg-slate-950/40">
+            ${htmlProcessos}
+          </div>
+        </details>
+        `;
+      }).join('');
+    }
+
+    async function sincronizarDataJud() {
+      const btn = document.getElementById("btnSideSync");
+      const icon = document.getElementById("sideSyncIcon");
+      const txt = document.getElementById("sideSyncText");
+
+      btn.disabled = true;
+      btn.classList.add("opacity-60", "cursor-not-allowed");
+      icon.classList.add("animate-spin");
+      if (txt) txt.innerText = "Consultando...";
+
+      try {
+        const res = await apiRequest("sync", {}, "POST");
+        if (res.success) {
+          await carregarProcessos();
+          alert("Verificação concluída com sucesso!");
+        } else {
+          alert("Erro: " + res.error);
+        }
+      } catch (err) {
+        alert("Erro ao conectar com a API.");
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove("opacity-60", "cursor-not-allowed");
+        icon.classList.remove("animate-spin");
+        if (txt) txt.innerText = "Checar DataJud";
+      }
+    }
+
+    async function salvarProcesso(e) {
+      e.preventDefault();
+      const mode = document.getElementById("formMode").value;
+      const btn = document.getElementById("btnSubmitForm");
+      btn.innerText = "Salvando...";
+      btn.disabled = true;
+
+      const payload = {
+        empresa: document.getElementById("campoEmpresa").value.trim(),
+        processo: document.getElementById("campoProcesso").value.trim(),
+        apelido: document.getElementById("campoApelido").value.trim(),
+        tribunal: document.getElementById("campoTribunal").value.trim(),
+        tipo: document.getElementById("campoTipo").value,
+        reclamante: document.getElementById("campoReclamante").value.trim(),
+        reclamado: document.getElementById("campoReclamado").value.trim(),
+        vara: document.getElementById("campoVara").value.trim(),
+        email: document.getElementById("campoEmail").value.trim(),
+        status: document.getElementById("campoStatus").value
+      };
+
+      try {
+        const res = await apiRequest(mode, payload, "POST");
+        if (res.success) {
+          closeProcessModal();
+          await carregarProcessos();
+        } else {
+          alert("Erro: " + res.error);
+        }
+      } catch (err) {
+        alert("Erro ao salvar processo.");
+      } finally {
+        btn.innerText = "Salvar";
+        btn.disabled = false;
+      }
+    }
+
+    async function excluirProcesso(numProcesso) {
+      if (!confirm(`Deseja realmente remover o processo ${numProcesso}?`)) return;
+      try {
+        const res = await apiRequest("delete", { processo: numProcesso }, "POST");
+        if (res.success) {
+          await carregarProcessos();
+        } else {
+          alert("Erro ao excluir: " + res.error);
+        }
+      } catch (err) {
+        alert("Erro na requisição.");
+      }
+    }
+
+    async function verMovimentacoes(numProcesso, titulo, tribunal) {
+      document.getElementById("movProcessoTitulo").innerText = titulo;
+      document.getElementById("movProcessoSubtitulo").innerText = numProcesso;
+      
+      const linkContainer = document.getElementById("movLinkTribunalContainer");
+      const links = obterLinksTribunal(numProcesso, tribunal);
+      
+      linkContainer.innerHTML = links.map(l => `
+        <a href="${l.url}" target="_blank" 
+          class="inline-flex items-center gap-1 text-[11px] text-blue-600 dark:text-blue-400 hover:underline bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/80 px-2 py-1 rounded-md transition font-medium">
+          <span>🔗</span> ${l.nome}
+        </a>
+      `).join('');
+
+      const lista = document.getElementById("movimentacoesLista");
+      lista.innerHTML = `<p class="text-center text-xs text-slate-500 py-6">Carregando...</p>`;
+      document.getElementById("movModal").classList.remove("hidden");
+
+      try {
+        const res = await apiRequest("movimentacoes", { processo: numProcesso });
+        if (res.success && res.data.length > 0) {
+          const ordenados = [...res.data].sort((a, b) => {
+            const dataA = a.dataMovimentacao ? new Date(a.dataMovimentacao).getTime() : 0;
+            const dataB = b.dataMovimentacao ? new Date(b.dataMovimentacao).getTime() : 0;
+            return dataB - dataA;
+          });
+
+          lista.innerHTML = ordenados.map(m => `
+            <div class="border-l-2 border-blue-500 pl-3 py-1.5 space-y-1 bg-slate-50 dark:bg-slate-950/30 rounded-r-lg">
+              <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block font-mono">
+                📅 ${m.dataMovimentacao ? new Date(m.dataMovimentacao).toLocaleString('pt-BR') : '-'}
+              </span>
+              <p class="text-xs text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">${m.atualizacao}</p>
+            </div>
+          `).join('');
+        } else {
+          lista.innerHTML = `<p class="text-center text-xs text-slate-500 py-6">Nenhuma movimentação registrada na planilha.</p>`;
+        }
+      } catch (err) {
+        lista.innerHTML = `<p class="text-center text-xs text-red-500 py-6">Erro ao buscar movimentações.</p>`;
+      }
+    }
+
+    function extrairTribunalETipo(processo) {
+      const digitos = processo.replace(/\D/g, "");
+      if (digitos.length < 16) return { tribunal: "", tipo: "" };
+
+      const j = digitos.substring(13, 14);
+      const tr = digitos.substring(14, 16);
+      let tribunal = "";
+      let tipo = "Cível";
+
+      if (j === "1") tribunal = "STF";
+      if (j === "2") tribunal = "CNJ";
+      if (j === "3") tribunal = "STJ";
+      if (j === "4") tribunal = `TRF${parseInt(tr, 10)}`;
+      if (j === "5") {
+        tribunal = `TRT${parseInt(tr, 10)}`;
+        tipo = "Trabalhista";
+      }
+      if (j === "6") {
+        tribunal = tr === "00" ? "TSE" : `TRE-${tr}`;
+        tipo = "Eleitoral";
+      }
+      if (j === "7") tribunal = "STM";
+
+      if (j === "8") {
+        const tjs = {
+          "01": "TJAC", "02": "TJAL", "03": "TJAP", "04": "TJAM",
+          "05": "TJBA", "06": "TJCE", "07": "TJDFT", "08": "TJES",
+          "09": "TJGO", "10": "TJMA", "11": "TJMT", "12": "TJMS",
+          "13": "TJMG", "14": "TJPA", "15": "TJPB", "16": "TJPR",
+          "17": "TJPE", "18": "TJPI", "19": "TJRJ", "20": "TJRN",
+          "21": "TJRS", "22": "TJRO", "23": "TJRR", "24": "TJSC",
+          "25": "TJSE", "26": "TJSP", "27": "TJTO"
+        };
+        tribunal = tjs[tr] || `TJ-${tr}`;
+      }
+      if (j === "9") tribunal = "TJM";
+
+      return { tribunal, tipo };
+    }
+
+    function aoDigitarProcesso(valor) {
+      const { tribunal, tipo } = extrairTribunalETipo(valor);
+      if (tribunal) document.getElementById("campoTribunal").value = tribunal;
+      if (tipo) document.getElementById("campoTipo").value = tipo;
+    }
+
+    function openProcessModal() {
+      document.getElementById("processForm").reset();
+      document.getElementById("formMode").value = "add";
+      document.getElementById("modalTitle").innerText = "Novo Processo";
+      document.getElementById("campoProcesso").readOnly = false;
+      document.getElementById("processModal").classList.remove("hidden");
+    }
+
+    function abrirEditar(p) {
+      document.getElementById("formMode").value = "edit";
+      document.getElementById("modalTitle").innerText = "Editar Processo";
+      document.getElementById("campoProcesso").value = p.processo;
+      document.getElementById("campoProcesso").readOnly = true;
+      document.getElementById("campoEmpresa").value = p.empresa || "";
+      document.getElementById("campoApelido").value = p.apelido || "";
+      document.getElementById("campoTribunal").value = p.tribunal || "";
+      document.getElementById("campoTipo").value = p.tipo || "Cível";
+      document.getElementById("campoReclamante").value = p.reclamante || "";
+      document.getElementById("campoReclamado").value = p.reclamado || "";
+      document.getElementById("campoVara").value = p.vara || "";
+      document.getElementById("campoEmail").value = p.email || "";
+      document.getElementById("campoStatus").value = p.status || "Ativo";
+      document.getElementById("processModal").classList.remove("hidden");
+    }
+
+    function closeProcessModal() {
+      document.getElementById("processModal").classList.add("hidden");
+    }
+
+    function openEmpresaModal() {
+      document.getElementById("empresaForm").reset();
+      limparLogoForm();
+      document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
+      document.getElementById("empresaModal").classList.remove("hidden");
+    }
+
+    function closeEmpresaModal() {
+      document.getElementById("empresaModal").classList.add("hidden");
+    }
+
+    function closeMovModal() {
+      document.getElementById("movModal").classList.add("hidden");
+    }
+
+    function openConfigModal() {
+      document.getElementById("apiUrlInput").value = API_URL === "SUA_URL_DO_WEBAPP_AQUI" ? "" : API_URL;
+      atualizarBotoesTema();
+      document.getElementById("configModal").classList.remove("hidden");
+    }
+
+    function closeConfigModal() {
+      document.getElementById("configModal").classList.add("hidden");
+    }
+
+    function salvarConfiguracoes() {
+      const val = document.getElementById("apiUrlInput").value.trim();
+      if (val) {
+        API_URL = val;
+        localStorage.setItem("PROCESSOS_API_URL", val);
+      }
+      closeConfigModal();
+      carregarProcessos();
+    }
+  </script>
+</body>
+</html>
