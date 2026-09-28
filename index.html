@@ -54,8 +54,10 @@
         
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Número do Processo (CNJ)*</label>
-          <input type="text" id="campoProcesso" required placeholder="0000000-00.0000.0.00.0000"
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+          <<input type="text" id="campoProcesso" required 
+  oninput="aoDigitarProcesso(this.value)"
+  placeholder="0000000-00.0000.0.00.0000"
+  class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
         <div class="grid grid-cols-2 gap-2">
@@ -333,6 +335,58 @@
       closeConfigModal();
       carregarProcessos();
     }
-  </script>
+  
+  function extrairTribunal(processo) {
+  // Remove pontos, traços e espaços, mantendo apenas números
+  const digitos = processo.replace(/\D/g, "");
+  if (digitos.length < 16) return "";
+
+  // J = ramo (1 dígito), TR = tribunal (2 dígitos)
+  const j = digitos.substring(13, 14);
+  const tr = digitos.substring(14, 16);
+
+  if (j === "1") return "STF";
+  if (j === "2") return "CNJ";
+  if (j === "3") return "STJ";
+
+  // Justiça Federal
+  if (j === "4") return `TRF${parseInt(tr, 10)}`;
+
+  // Justiça do Trabalho
+  if (j === "5") return `TRT${parseInt(tr, 10)}`;
+
+  // Justiça Eleitoral
+  if (j === "6") return tr === "00" ? "TSE" : `TRE-${tr}`;
+
+  // Justiça Militar da União
+  if (j === "7") return "STM";
+
+  // Justiça Estadual (TJ)
+  if (j === "8") {
+    const tjs = {
+      "01": "TJAC", "02": "TJAL", "03": "TJAP", "04": "TJAM",
+      "05": "TJBA", "06": "TJCE", "07": "TJDFT", "08": "TJES",
+      "09": "TJGO", "10": "TJMA", "11": "TJMT", "12": "TJMS",
+      "13": "TJMG", "14": "TJPA", "15": "TJPB", "16": "TJPR",
+      "17": "TJPE", "18": "TJPI", "19": "TJRJ", "20": "TJRN",
+      "21": "TJRS", "22": "TJRO", "23": "TJRR", "24": "TJSC",
+      "25": "TJSE", "26": "TJSP", "27": "TJTO"
+    };
+    return tjs[tr] || `TJ-${tr}`;
+  }
+
+  // Justiça Militar Estadual
+  if (j === "9") return "TJM";
+
+  return "";
+}
+
+function aoDigitarProcesso(valor) {
+  const trib = extrairTribunal(valor);
+  if (trib) {
+    document.getElementById("campoTribunal").value = trib;
+  }
+}
+  </script>    
 </body>
 </html>
