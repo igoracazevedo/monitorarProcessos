@@ -1,65 +1,72 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>IAZ Jud - Monitoramento Processual</title>
-  <meta name="theme-color" content="#090d16">
+  <meta name="theme-color" content="#090d16" id="metaThemeColor">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class' };
+    // Aplicação imediata do tema salvo para evitar piscamento
+    const temaSalvo = localStorage.getItem("APP_THEME") || "dark";
+    if (temaSalvo === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  </script>
   <style>
     summary::-webkit-details-marker { display: none; }
     summary { list-style: none; }
     details[open] > summary .chevron-icon { transform: rotate(180deg); }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col md:flex-row">
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans min-h-screen flex flex-col md:flex-row transition-colors duration-150">
 
-  <!-- Overlay para fechar sidebar no celular -->
+  <!-- Overlay para mobile -->
   <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden md:hidden"></div>
 
-  <!-- Barra Lateral Esquerda (Sidebar) -->
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
+  <!-- Barra Lateral (Sidebar) -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
     <div>
-      <!-- Topo da Sidebar -->
-      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <div class="flex items-center gap-2.5 min-w-0">
-          <img id="sideHeaderLogo" src="" alt="Logo" onerror="this.classList.add('hidden')" class="hidden h-9 w-auto max-w-[48px] object-contain rounded bg-slate-950 p-1 border border-slate-800">
+          <img id="sideHeaderLogo" src="" alt="Logo" onerror="this.classList.add('hidden')" class="hidden h-9 w-auto max-w-[48px] object-contain rounded bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800">
           <div class="min-w-0">
-            <h1 class="font-bold text-sm text-slate-100 leading-tight">IAZ Jud</h1>
-            <p id="sideHeaderEmpresa" class="text-[11px] text-blue-400 font-medium truncate">Monitoramento</p>
+            <h1 class="font-bold text-sm text-slate-900 dark:text-slate-100 leading-tight">IAZ Jud</h1>
+            <p id="sideHeaderEmpresa" class="text-[11px] text-blue-600 dark:text-blue-400 font-medium truncate">Monitoramento</p>
           </div>
         </div>
-        <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-slate-200 text-lg p-1">✕</button>
+        <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg p-1">✕</button>
       </div>
 
-      <!-- Menu de Navegação -->
       <nav class="p-3 space-y-1.5 text-xs font-medium">
-        <button onclick="fecharSidebar()" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-blue-600/10 text-blue-400 border border-blue-500/20 text-left">
+        <button onclick="fecharSidebar()" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-600/10 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 text-left">
           <span>📁</span>
           <span>Painel de Processos</span>
         </button>
 
-        <button onclick="openEmpresaModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-slate-100 text-left transition">
+        <button onclick="openEmpresaModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition">
           <span>🏢</span>
           <span>Cadastro de Empresa</span>
         </button>
 
-        <button onclick="openProcessModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-slate-100 text-left transition">
+        <button onclick="openProcessModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition">
           <span>⚖️</span>
           <span>Cadastro de Processo</span>
         </button>
 
-        <button onclick="openConfigModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-slate-100 text-left transition">
+        <button onclick="openConfigModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition">
           <span>⚙️</span>
-          <span>Configuração do Script</span>
+          <span>Configurações</span>
         </button>
       </nav>
     </div>
 
-    <!-- Sincronização no Rodapé -->
-    <div class="p-3 border-t border-slate-800">
+    <div class="p-3 border-t border-slate-200 dark:border-slate-800">
       <button id="btnSideSync" onclick="sincronizarDataJud()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow transition">
         <span id="sideSyncIcon">⚡</span>
         <span id="sideSyncText">Checar DataJud</span>
@@ -69,21 +76,21 @@
 
   <!-- Área Principal -->
   <div class="flex-1 md:ml-64 flex flex-col min-w-0">
-    <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-30 shadow-md">
+    <header class="bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-sm">
       <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
         <div class="flex items-center gap-3">
-          <button onclick="toggleSidebar()" class="md:hidden p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+          <button onclick="toggleSidebar()" class="md:hidden p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
             ☰
           </button>
-          <img id="topHeaderLogo" src="" alt="Logo" onerror="this.classList.add('hidden')" class="hidden md:block h-8 w-auto max-w-[42px] object-contain rounded bg-slate-950 p-1 border border-slate-800">
+          <img id="topHeaderLogo" src="" alt="Logo" onerror="this.classList.add('hidden')" class="hidden md:block h-8 w-auto max-w-[42px] object-contain rounded bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800">
           <div>
-            <h2 class="font-bold text-sm sm:text-base text-slate-100">Painel de Processos</h2>
-            <p id="topHeaderSubtitulo" class="text-[11px] text-slate-400">Visão Geral dos Autos</p>
+            <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100">Painel de Processos</h2>
+            <p id="topHeaderSubtitulo" class="text-[11px] text-slate-500 dark:text-slate-400">Visão Geral dos Autos</p>
           </div>
         </div>
 
         <div class="flex items-center gap-2">
-          <button onclick="openEmpresaModal()" class="hidden sm:flex bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium px-2.5 py-1.5 rounded-lg items-center gap-1">
+          <button onclick="openEmpresaModal()" class="hidden sm:flex bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium px-2.5 py-1.5 rounded-lg items-center gap-1">
             <span>🏢</span> Empresa
           </button>
           <button onclick="openProcessModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-1 shadow">
@@ -93,18 +100,17 @@
       </div>
     </header>
 
-    <!-- Conteúdo Central -->
     <main class="max-w-5xl w-full mx-auto px-4 py-4 space-y-4 flex-1">
       <div class="flex flex-col sm:flex-row gap-2">
         <select id="empresaFilter" onchange="aoFiltrarEmpresa()" 
-          class="px-3 py-2 bg-slate-900 border border-slate-800 text-slate-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm sm:w-56 font-medium">
+          class="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm sm:w-56 font-medium">
           <option value="">Todas as Empresas</option>
         </select>
 
         <div class="flex gap-2 flex-1">
           <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por número, tipo, apelido, partes ou vara..." 
-            class="w-full px-3 py-2 bg-slate-900 border border-slate-800 text-slate-100 rounded-lg text-xs sm:text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
-          <button onclick="carregarProcessos()" title="Atualizar Lista" class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm hover:bg-slate-800 shadow-sm text-slate-300">
+            class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-lg text-xs sm:text-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+          <button onclick="carregarProcessos()" title="Atualizar Lista" class="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-800 shadow-sm text-slate-600 dark:text-slate-300">
             🔄
           </button>
         </div>
@@ -117,55 +123,51 @@
   </div>
 
   <!-- MODAL: Gerenciar / Cadastrar Empresa -->
-  <div id="empresaModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+  <div id="empresaModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h3 class="text-base font-bold text-slate-100">Gerenciar Empresas</h3>
-          <p class="text-xs text-slate-400">Cadastre suas filiais ou clientes corporativos</p>
+          <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Gerenciar Empresas</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Cadastre suas filiais ou clientes corporativos</p>
         </div>
-        <button onclick="closeEmpresaModal()" class="text-slate-400 hover:text-slate-200 text-lg font-bold p-1">✕</button>
+        <button onclick="closeEmpresaModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1">✕</button>
       </div>
 
-      <!-- Formulário de Nova Empresa -->
-      <form id="empresaForm" onsubmit="salvarEmpresa(event)" class="space-y-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-        <h4 class="text-xs font-semibold text-blue-400 uppercase tracking-wide">Nova Empresa</h4>
+      <form id="empresaForm" onsubmit="salvarEmpresa(event)" class="space-y-3 bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+        <h4 class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">Nova Empresa</h4>
         <div class="grid grid-cols-3 gap-2">
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Código (Auto)</label>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Código (Auto)</label>
             <input type="text" id="campoEmpCodigo" readonly placeholder="Gerando..."
-              class="w-full px-2.5 py-1.5 bg-slate-950/80 border border-slate-800 rounded-lg text-xs text-blue-400 font-mono cursor-not-allowed select-none focus:outline-none">
+              class="w-full px-2.5 py-1.5 bg-slate-200 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-blue-600 dark:text-blue-400 font-mono cursor-not-allowed select-none focus:outline-none">
           </div>
           <div class="col-span-2">
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Nome da Empresa*</label>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nome da Empresa*</label>
             <input type="text" id="campoEmpNome" required placeholder="Ex: IAZ Transportes LTDA"
-              class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+              class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
           </div>
         </div>
 
-        <!-- Opção de Upload ou Link de Logotipo -->
         <div class="space-y-2">
-          <label class="block text-xs font-semibold text-slate-400">Logotipo da Empresa</label>
-          
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">Logotipo da Empresa</label>
           <div>
-            <label class="block text-[11px] text-slate-500 mb-1">Subir do dispositivo (recomendado):</label>
+            <label class="block text-[11px] text-slate-500 mb-1">Subir do dispositivo:</label>
             <input type="file" id="campoEmpFile" accept="image/*" onchange="processarArquivoLogo(event)"
-              class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700 cursor-pointer">
+              class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-700 dark:file:text-slate-200 hover:file:bg-slate-300 dark:hover:file:bg-slate-700 cursor-pointer">
           </div>
 
           <div>
             <label class="block text-[11px] text-slate-500 mb-1">Ou cole a URL direta / link do Google Drive:</label>
             <input type="text" id="campoEmpLogo" oninput="aoDigitarLogoUrl(this.value)" placeholder="https://..."
-              class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none font-mono">
+              class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none font-mono">
           </div>
 
-          <!-- Preview da Imagem -->
-          <div id="logoPreviewContainer" class="hidden mt-2 p-2 bg-slate-900 rounded-lg border border-slate-800 flex items-center justify-between">
+          <div id="logoPreviewContainer" class="hidden mt-2 p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <img id="logoPreviewImg" src="" class="h-8 w-auto max-w-[60px] object-contain rounded bg-slate-950 p-1 border border-slate-700">
-              <span class="text-[11px] text-emerald-400 font-medium">Logotipo carregado com sucesso</span>
+              <img id="logoPreviewImg" src="" class="h-8 w-auto max-w-[60px] object-contain rounded bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-700">
+              <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">Logotipo pronto</span>
             </div>
-            <button type="button" onclick="limparLogoForm()" class="text-xs text-red-400 hover:text-red-300">Remover</button>
+            <button type="button" onclick="limparLogoForm()" class="text-xs text-red-500 hover:text-red-400">Remover</button>
           </div>
         </div>
 
@@ -176,9 +178,8 @@
         </div>
       </form>
 
-      <!-- Lista de Empresas Cadastradas -->
       <div>
-        <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Empresas Cadastradas</h4>
+        <h4 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Empresas Cadastradas</h4>
         <div id="empresasListaContainer" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
           <p class="text-xs text-slate-500 py-3 text-center">Nenhuma empresa encontrada.</p>
         </div>
@@ -187,42 +188,42 @@
   </div>
 
   <!-- MODAL: Adicionar / Editar Processo -->
-  <div id="processModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
-      <h3 id="modalTitle" class="text-base font-bold text-slate-100 mb-4">Novo Processo</h3>
+  <div id="processModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <h3 id="modalTitle" class="text-base font-bold text-slate-900 dark:text-slate-100 mb-4">Novo Processo</h3>
       <form id="processForm" onsubmit="salvarProcesso(event)" class="space-y-3">
         <input type="hidden" id="formMode" value="add">
         
         <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">Empresa Vinculada*</label>
-          <select id="campoEmpresa" required class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Empresa Vinculada*</label>
+          <select id="campoEmpresa" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
             <option value="">Selecione uma empresa...</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">Número do Processo (CNJ)*</label>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Número do Processo (CNJ)*</label>
           <input type="text" id="campoProcesso" required oninput="aoDigitarProcesso(this.value)" placeholder="0000000-00.0000.0.00.0000"
-            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none font-mono">
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 outline-none font-mono">
         </div>
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Apelido/Identificador</label>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Apelido/Identificador</label>
             <input type="text" id="campoApelido" placeholder="Ex: Causa Cível"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Tribunal (Automático)</label>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tribunal (Automático)</label>
             <input type="text" id="campoTribunal" placeholder="TJCE, TRF5..."
-              class="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-lg text-sm text-slate-300 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+              class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Tipo de Processo</label>
-            <select id="campoTipo" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tipo de Processo</label>
+            <select id="campoTipo" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
               <option value="Cível">Cível</option>
               <option value="Trabalhista">Trabalhista</option>
               <option value="Criminal">Criminal</option>
@@ -233,8 +234,8 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Status</label>
-            <select id="campoStatus" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Status</label>
+            <select id="campoStatus" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
               <option value="Ativo">Ativo</option>
               <option value="Arquivado">Arquivado</option>
               <option value="Suspenso">Suspenso</option>
@@ -244,31 +245,31 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Reclamante (Autor)</label>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Reclamante (Autor)</label>
             <input type="text" id="campoReclamante" placeholder="DataJud ou manual"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Reclamado (Réu)</label>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Reclamado (Réu)</label>
             <input type="text" id="campoReclamado" placeholder="DataJud ou manual"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">Vara / Unidade Judiciária</label>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Vara / Unidade Judiciária</label>
           <input type="text" id="campoVara" placeholder="Ex: 2ª Vara Cível de Fortaleza"
-            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">E-mail de Notificação</label>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">E-mail de Notificação</label>
           <input type="email" id="campoEmail" placeholder="seu@email.com"
-            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
         <div class="flex justify-end gap-2 pt-4">
-          <button type="button" onclick="closeProcessModal()" class="px-4 py-2 border border-slate-700 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">Cancelar</button>
+          <button type="button" onclick="closeProcessModal()" class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Cancelar</button>
           <button type="submit" id="btnSubmitForm" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium shadow">Salvar</button>
         </div>
       </form>
@@ -276,21 +277,21 @@
   </div>
 
   <!-- MODAL: Histórico de Movimentações -->
-  <div id="movModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[85vh] flex flex-col">
-      <div class="flex items-start justify-between pb-3 border-b border-slate-800 gap-2">
+  <div id="movModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex items-start justify-between pb-3 border-b border-slate-200 dark:border-slate-800 gap-2">
         <div class="flex-1">
-          <h3 class="text-base font-bold text-slate-100" id="movProcessoTitulo">Movimentações</h3>
+          <h3 class="text-base font-bold text-slate-900 dark:text-slate-100" id="movProcessoTitulo">Movimentações</h3>
           <div class="flex items-center gap-2 mt-1">
-            <span class="text-xs text-slate-400 font-mono" id="movProcessoSubtitulo"></span>
+            <span class="text-xs text-slate-500 dark:text-slate-400 font-mono" id="movProcessoSubtitulo"></span>
             <button onclick="copiarProcesso(document.getElementById('movProcessoSubtitulo').innerText)" 
-              class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded border border-slate-700 transition">
+              class="text-[11px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 transition">
               📋 Copiar
             </button>
           </div>
           <div id="movLinkTribunalContainer" class="mt-2.5 flex items-center gap-2 flex-wrap"></div>
         </div>
-        <button onclick="closeMovModal()" class="text-slate-400 hover:text-slate-200 text-lg font-bold p-1">✕</button>
+        <button onclick="closeMovModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1">✕</button>
       </div>
       <div id="movimentacoesLista" class="overflow-y-auto py-3 space-y-3 flex-1 pr-1">
         <p class="text-center text-xs text-slate-500 py-6">Carregando movimentações...</p>
@@ -298,16 +299,39 @@
     </div>
   </div>
 
-  <!-- MODAL: Configuração do Script -->
-  <div id="configModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-5 shadow-2xl">
-      <h3 class="text-base font-bold text-slate-100 mb-2">Configuração do Script</h3>
-      <p class="text-xs text-slate-400 mb-3">Cole a URL de implantação da API terminada em <code>/exec</code>:</p>
-      <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec"
-        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none mb-4">
-      <div class="flex justify-end gap-2">
-        <button onclick="closeConfigModal()" class="px-4 py-2 border border-slate-700 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">Fechar</button>
-        <button onclick="salvarApiUrl()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium">Salvar</button>
+  <!-- MODAL: Configurações & Tema -->
+  <div id="configModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4">
+      <div>
+        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">Configurações do Aplicativo</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Ajuste a aparência e a conexão com a planilha.</p>
+      </div>
+
+      <!-- Opção de Tema -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Aparência (Tema)</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="alterarTema('dark')" id="btnTemaDark" 
+            class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition">
+            <span>🌙</span> Modo Escuro
+          </button>
+          <button type="button" onclick="alterarTema('light')" id="btnTemaLight" 
+            class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition">
+            <span>☀️</span> Modo Claro
+          </button>
+        </div>
+      </div>
+
+      <!-- URL da API -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">URL da API (Apps Script)</label>
+        <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec"
+          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-xs font-mono text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeConfigModal()" class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Fechar</button>
+        <button onclick="salvarConfiguracoes()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium">Salvar</button>
       </div>
     </div>
   </div>
@@ -320,12 +344,43 @@
     let logoTempBase64 = "";
 
     window.addEventListener("DOMContentLoaded", () => {
+      atualizarBotoesTema();
       if (!API_URL || API_URL === "SUA_URL_DO_WEBAPP_AQUI") {
         openConfigModal();
       } else {
         carregarProcessos();
       }
     });
+
+    // Funções de Tema (Claro / Escuro)
+    function alterarTema(tema) {
+      localStorage.setItem("APP_THEME", tema);
+      const meta = document.getElementById("metaThemeColor");
+      if (tema === "dark") {
+        document.documentElement.classList.add("dark");
+        if (meta) meta.setAttribute("content", "#090d16");
+      } else {
+        document.documentElement.classList.remove("dark");
+        if (meta) meta.setAttribute("content", "#f8fafc");
+      }
+      atualizarBotoesTema();
+    }
+
+    function atualizarBotoesTema() {
+      const temaAtual = localStorage.getItem("APP_THEME") || "dark";
+      const btnDark = document.getElementById("btnTemaDark");
+      const btnLight = document.getElementById("btnTemaLight");
+
+      if (!btnDark || !btnLight) return;
+
+      if (temaAtual === "dark") {
+        btnDark.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-blue-500 bg-blue-500/10 text-blue-400 text-xs font-semibold";
+        btnLight.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800";
+      } else {
+        btnLight.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-blue-600 bg-blue-50 text-blue-600 text-xs font-semibold";
+        btnDark.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800";
+      }
+    }
 
     function toggleSidebar() {
       const sidebar = document.getElementById("sidebar");
@@ -341,12 +396,10 @@
       overlay.classList.add("hidden");
     }
 
-    // Converte links do Google Drive para links diretos de imagem
     function tratarUrlImagem(url) {
       if (!url) return "";
       const trimmed = url.trim();
       if (trimmed.startsWith("data:image")) return trimmed;
-
       const driveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/id=([a-zA-Z0-9_-]+)/);
       if (driveMatch && driveMatch[1]) {
         return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
@@ -354,11 +407,9 @@
       return trimmed;
     }
 
-    // Compacta a imagem enviada por upload para caber seguramente no Google Sheets (máx 140x140px)
     function processarArquivoLogo(event) {
       const file = event.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = function(e) {
         const img = new Image();
@@ -367,7 +418,6 @@
           let width = img.width;
           let height = img.height;
           const maxDim = 120;
-
           if (width > height) {
             if (width > maxDim) {
               height = Math.round((height * maxDim) / width);
@@ -379,7 +429,6 @@
               height = maxDim;
             }
           }
-
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext("2d");
@@ -456,10 +505,10 @@
           atualizarIdentidadeVisual();
           renderProcessos();
         } else {
-          container.innerHTML = `<div class="text-center text-red-400 text-sm py-4">Erro: ${res.error}</div>`;
+          container.innerHTML = `<div class="text-center text-red-500 text-sm py-4">Erro: ${res.error}</div>`;
         }
       } catch (err) {
-        container.innerHTML = `<div class="text-center text-red-400 text-sm py-4">Falha ao conectar com o script. Verifique as configurações.</div>`;
+        container.innerHTML = `<div class="text-center text-red-500 text-sm py-4">Falha ao conectar com o script. Verifique as configurações.</div>`;
       }
     }
 
@@ -488,15 +537,15 @@
       container.innerHTML = empresasData.map(e => {
         const logoUrl = tratarUrlImagem(e.logo);
         return `
-        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-xs">
+        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
           <div class="flex items-center gap-2 min-w-0">
-            ${logoUrl ? `<img src="${logoUrl}" onerror="this.src=''; this.style.display='none'" class="h-6 w-6 object-contain rounded bg-slate-950 p-0.5">` : `<span class="text-base">🏢</span>`}
+            ${logoUrl ? `<img src="${logoUrl}" onerror="this.src=''; this.style.display='none'" class="h-6 w-6 object-contain rounded bg-white dark:bg-slate-950 p-0.5 border border-slate-200 dark:border-slate-800">` : `<span class="text-base">🏢</span>`}
             <div class="min-w-0">
-              <p class="font-bold text-slate-200 truncate">${e.nome}</p>
-              <p class="text-[10px] text-slate-400 font-mono">Código: ${e.codigo}</p>
+              <p class="font-bold text-slate-800 dark:text-slate-200 truncate">${e.nome}</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">Código: ${e.codigo}</p>
             </div>
           </div>
-          <button onclick="excluirEmpresa('${e.codigo}')" class="text-red-400 hover:text-red-300 p-1 text-xs">🗑️</button>
+          <button onclick="excluirEmpresa('${e.codigo}')" class="text-red-500 hover:text-red-400 p-1 text-xs">🗑️</button>
         </div>
         `;
       }).join('');
@@ -695,7 +744,7 @@
       });
 
       if (filtrados.length === 0) {
-        container.innerHTML = `<div class="bg-slate-900 p-8 rounded-xl border border-slate-800 text-center text-slate-500 text-sm">Nenhum processo encontrado.</div>`;
+        container.innerHTML = `<div class="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-slate-500 text-sm shadow-sm">Nenhum processo encontrado.</div>`;
         return;
       }
 
@@ -744,19 +793,19 @@
           const nomeEmpresa = obterNomeEmpresa(p.empresa);
 
           return `
-          <details class="group/item bg-slate-950 border border-slate-800/80 hover:border-slate-700 rounded-xl overflow-hidden transition shadow-sm mb-2.5">
-            <summary class="cursor-pointer select-none p-3.5 sm:p-4 flex items-center justify-between gap-3 bg-slate-950 group-hover/item:bg-slate-900/50">
+          <details class="group/item bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl overflow-hidden transition shadow-sm mb-2.5">
+            <summary class="cursor-pointer select-none p-3.5 sm:p-4 flex items-center justify-between gap-3 bg-white dark:bg-slate-950 group-hover/item:bg-slate-50 dark:group-hover/item:bg-slate-900/50">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5 flex-wrap mb-1">
-                  <span class="text-sm font-bold text-slate-100 truncate">${p.apelido || 'Sem apelido'}</span>
-                  ${nomeEmpresa ? `<span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-slate-800 text-blue-300 border border-slate-700">🏢 ${nomeEmpresa}</span>` : ''}
-                  ${p.tribunal ? `<span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-blue-950 text-blue-400 border border-blue-800/60">${p.tribunal}</span>` : ''}
+                  <span class="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">${p.apelido || 'Sem apelido'}</span>
+                  ${nomeEmpresa ? `<span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-slate-100 dark:bg-slate-800 text-blue-700 dark:text-blue-300 border border-slate-200 dark:border-slate-700">🏢 ${nomeEmpresa}</span>` : ''}
+                  ${p.tribunal ? `<span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60">${p.tribunal}</span>` : ''}
                 </div>
-                <p class="text-xs text-slate-400 font-mono truncate select-all">${p.processo}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-mono truncate select-all">${p.processo}</p>
               </div>
 
               <div class="flex items-center gap-2.5 flex-shrink-0">
-                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-slate-800 text-slate-300 border border-slate-700/80">
+                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80">
                   ⏱️ ${tempoDesde}
                 </span>
                 <svg class="chevron-icon w-4 h-4 text-slate-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -765,47 +814,47 @@
               </div>
             </summary>
 
-            <div class="px-4 pb-4 pt-2 border-t border-slate-800/80 bg-slate-900/40 space-y-3">
+            <div class="px-4 pb-4 pt-2 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40 space-y-3">
               <div class="flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center gap-2">
                   <span class="px-2 py-0.5 text-xs font-semibold rounded ${
-                    p.status === 'Ativo' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60' : 'bg-slate-800 text-slate-400'
+                    p.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                   }">${p.status || 'Ativo'}</span>
-                  <span class="text-[11px] text-slate-400">Última data: <strong class="text-slate-200">${dataFormatada}</strong></span>
+                  <span class="text-[11px] text-slate-500 dark:text-slate-400">Última data: <strong class="text-slate-800 dark:text-slate-200">${dataFormatada}</strong></span>
                 </div>
                 <div class="flex items-center gap-1">
                   <button onclick='event.stopPropagation(); abrirEditar(${JSON.stringify(p)})' 
-                    class="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded-md text-xs transition">✏️ Editar</button>
+                    class="p-1.5 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md text-xs transition">✏️ Editar</button>
                   <button onclick='event.stopPropagation(); excluirProcesso("${p.processo}")' 
-                    class="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-md text-xs transition">🗑️ Excluir</button>
+                    class="p-1.5 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md text-xs transition">🗑️ Excluir</button>
                 </div>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-900/80 border border-slate-800 p-2.5 rounded-lg">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg shadow-sm">
                 <div class="sm:col-span-2">
                   <span class="text-slate-500 font-semibold">🏛️ Vara:</span> 
-                  <span class="text-slate-200">${p.vara || '<span class="text-slate-500 italic">Não informada</span>'}</span>
+                  <span class="text-slate-800 dark:text-slate-200">${p.vara || '<span class="text-slate-400 italic">Não informada</span>'}</span>
                 </div>
                 <div>
                   <span class="text-slate-500 font-semibold">👤 Reclamante:</span> 
-                  <span class="text-slate-200">${p.reclamante || '<span class="text-slate-500 italic">Não informado</span>'}</span>
+                  <span class="text-slate-800 dark:text-slate-200">${p.reclamante || '<span class="text-slate-400 italic">Não informado</span>'}</span>
                 </div>
                 <div>
                   <span class="text-slate-500 font-semibold">🏢 Reclamado:</span> 
-                  <span class="text-slate-200">${p.reclamado || '<span class="text-slate-500 italic">Não informado</span>'}</span>
+                  <span class="text-slate-800 dark:text-slate-200">${p.reclamado || '<span class="text-slate-400 italic">Não informado</span>'}</span>
                 </div>
               </div>
 
-              <div class="flex items-center justify-between pt-1 border-t border-slate-850 flex-wrap gap-2">
+              <div class="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-850 flex-wrap gap-2">
                 <div class="flex items-center gap-3">
                   <span class="text-xs text-slate-500 truncate max-w-[180px]" title="${p.email || ''}">✉️ ${p.email || 'Sem e-mail'}</span>
                   <a href="${linkPrincipal.url}" target="_blank" onclick="event.stopPropagation()"
-                    class="text-xs text-blue-400 hover:text-blue-300 underline font-medium">
+                    class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">
                     🔗 Abrir no ${linkPrincipal.nome}
                   </a>
                 </div>
                 <button onclick='event.stopPropagation(); verMovimentacoes("${p.processo}", "${p.apelido || p.processo}", "${p.tribunal || ""}")' 
-                  class="text-xs font-semibold text-blue-400 hover:text-blue-300 transition">
+                  class="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition">
                   Ver Histórico Completo →
                 </button>
               </div>
@@ -815,12 +864,12 @@
         }).join('');
 
         return `
-        <details class="group bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-md transition">
-          <summary class="cursor-pointer select-none px-4 py-3.5 flex items-center justify-between bg-slate-900 hover:bg-slate-850 border-b border-transparent group-open:border-slate-800 transition">
+        <details class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm transition">
+          <summary class="cursor-pointer select-none px-4 py-3.5 flex items-center justify-between bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 border-b border-transparent group-open:border-slate-200 dark:group-open:border-slate-800 transition">
             <div class="flex items-center gap-2.5">
               <span class="text-lg">${icone}</span>
-              <span class="font-bold text-sm text-slate-100">${tipo}</span>
-              <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-slate-300 border border-slate-700/80">
+              <span class="font-bold text-sm text-slate-900 dark:text-slate-100">${tipo}</span>
+              <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80">
                 ${total} ${total === 1 ? 'processo' : 'processos'}
               </span>
             </div>
@@ -831,7 +880,7 @@
               </svg>
             </div>
           </summary>
-          <div class="p-3 bg-slate-950/40">
+          <div class="p-3 bg-slate-100/60 dark:bg-slate-950/40">
             ${htmlProcessos}
           </div>
         </details>
@@ -926,7 +975,7 @@
       
       linkContainer.innerHTML = links.map(l => `
         <a href="${l.url}" target="_blank" 
-          class="inline-flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 bg-blue-950/60 border border-blue-800/80 px-2 py-1 rounded-md transition font-medium">
+          class="inline-flex items-center gap-1 text-[11px] text-blue-600 dark:text-blue-400 hover:underline bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/80 px-2 py-1 rounded-md transition font-medium">
           <span>🔗</span> ${l.nome}
         </a>
       `).join('');
@@ -945,18 +994,18 @@
           });
 
           lista.innerHTML = ordenados.map(m => `
-            <div class="border-l-2 border-blue-500 pl-3 py-1.5 space-y-1 bg-slate-950/30 rounded-r-lg">
-              <span class="text-[10px] font-semibold text-slate-400 block font-mono">
+            <div class="border-l-2 border-blue-500 pl-3 py-1.5 space-y-1 bg-slate-50 dark:bg-slate-950/30 rounded-r-lg">
+              <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block font-mono">
                 📅 ${m.dataMovimentacao ? new Date(m.dataMovimentacao).toLocaleString('pt-BR') : '-'}
               </span>
-              <p class="text-xs text-slate-200 leading-relaxed whitespace-pre-line">${m.atualizacao}</p>
+              <p class="text-xs text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">${m.atualizacao}</p>
             </div>
           `).join('');
         } else {
           lista.innerHTML = `<p class="text-center text-xs text-slate-500 py-6">Nenhuma movimentação registrada na planilha.</p>`;
         }
       } catch (err) {
-        lista.innerHTML = `<p class="text-center text-xs text-red-400 py-6">Erro ao buscar movimentações.</p>`;
+        lista.innerHTML = `<p class="text-center text-xs text-red-500 py-6">Erro ao buscar movimentações.</p>`;
       }
     }
 
@@ -1052,6 +1101,7 @@
 
     function openConfigModal() {
       document.getElementById("apiUrlInput").value = API_URL === "SUA_URL_DO_WEBAPP_AQUI" ? "" : API_URL;
+      atualizarBotoesTema();
       document.getElementById("configModal").classList.remove("hidden");
     }
 
@@ -1059,11 +1109,12 @@
       document.getElementById("configModal").classList.add("hidden");
     }
 
-    function salvarApiUrl() {
+    function salvarConfiguracoes() {
       const val = document.getElementById("apiUrlInput").value.trim();
-      if (!val) return;
-      API_URL = val;
-      localStorage.setItem("PROCESSOS_API_URL", val);
+      if (val) {
+        API_URL = val;
+        localStorage.setItem("PROCESSOS_API_URL", val);
+      }
       closeConfigModal();
       carregarProcessos();
     }
