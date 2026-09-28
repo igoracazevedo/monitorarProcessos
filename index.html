@@ -111,7 +111,7 @@
         <div>
           <h3 class="text-base font-bold text-slate-100" id="movProcessoTitulo">Movimentações</h3>
           <p class="text-xs text-slate-400 font-mono mt-0.5" id="movProcessoSubtitulo"></p>
-          <div id="movLinkTribunalContainer" class="mt-2"></div>
+          <div id="movLinkTribunalContainer" class="mt-2.5 flex items-center gap-2 flex-wrap"></div>
         </div>
         <button onclick="closeMovModal()" class="text-slate-400 hover:text-slate-200 text-lg font-bold p-1">✕</button>
       </div>
@@ -196,18 +196,59 @@
       return `Há ${diffDias} dias`;
     }
 
-    // Gera o link de consulta pública
-    function gerarLinkProcesso(numProcesso, tribunal) {
-      const cleanNum = numProcesso.replace(/\D/g, "");
-      const trib = (tribunal || "").toUpperCase();
+    // Gera o link oficial direto para a consulta pública do tribunal correspondente
+    function obterLinksTribunal(numProcesso, tribunal) {
+      const numeroLimpo = numProcesso.replace(/\D/g, "");
+      const trib = (tribunal || "").toUpperCase().trim();
+      const links = [];
 
+      // 1. Tribunal Específico
       if (trib === "TJCE") {
-        return `https://esaj.tjce.jus.br/cpopg/search.do?cbPesquisa=NUMPROC&dadosConsulta.valorConsultaNuUnificado=${cleanNum}`;
+        links.push({
+          nome: "e-SAJ TJCE",
+          url: `https://esaj.tjce.jus.br/cpopg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&dadosConsulta.valorConsultaNuUnificado=${numeroLimpo}`
+        });
+        links.push({
+          nome: "PJe TJCE",
+          url: `https://pje.tjce.jus.br/pje/ConsultaPublica/listView.seam`
+        });
+      } else if (trib === "TJSP") {
+        links.push({
+          nome: "e-SAJ TJSP",
+          url: `https://esaj.tjsp.jus.br/cpopg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&dadosConsulta.valorConsultaNuUnificado=${numeroLimpo}`
+        });
+      } else if (trib.startsWith("TRF")) {
+        const numRegiao = trib.replace("TRF", "");
+        links.push({
+          nome: `PJe ${trib}`,
+          url: `https://pje.trf${numRegiao}.jus.br/pje/ConsultaPublica/listView.seam`
+        });
+      } else if (trib.startsWith("TRT")) {
+        const numRegiao = trib.replace("TRT", "");
+        links.push({
+          nome: `PJe Justiça do Trabalho (${trib})`,
+          url: `https://pje.trt${numRegiao}.jus.br/consultaprocessual/detalhe-processo/${encodeURIComponent(numProcesso)}`
+        });
+      } else if (trib === "STJ") {
+        links.push({
+          nome: "Portal do STJ",
+          url: `https://processo.stj.jus.br/processo/pesquisa/?num_processo=${numeroLimpo}`
+        });
       }
-      if (trib === "TRF5") {
-        return `https://pje.trf5.jus.br/pje/ConsultaPublica/listView.seam`;
-      }
-      return `https://www.jusbrasil.com.br/processos/busca?q=${encodeURIComponent(numProcesso)}`;
+
+      // 2. Consulta Oficial Nacional do CNJ (Comunica PJe - Todos os tribunais do Brasil)
+      links.push({
+        nome: "CNJ (Comunica PJe)",
+        url: `https://comunica.pje.jus.br/consulta?numeroUnico=${numeroLimpo}`
+      });
+
+      // 3. Jusbrasil Busca Geral (Corrigida)
+      links.push({
+        nome: "Jusbrasil",
+        url: `https://www.jusbrasil.com.br/busca?q=${encodeURIComponent(numProcesso)}`
+      });
+
+      return links;
     }
 
     function renderProcessos() {
@@ -227,7 +268,8 @@
       container.innerHTML = filtrados.map(p => {
         const tempoDesde = calcularDiasDesde(p.ultimaData);
         const dataFormatada = p.ultimaData ? new Date(p.ultimaData).toLocaleDateString('pt-BR') : '-';
-        const linkConsulta = gerarLinkProcesso(p.processo, p.tribunal);
+        const linksTribunal = obterLinksTribunal(p.processo, p.tribunal);
+        const linkPrincipal = linksTribunal[0];
 
         return `
         <details class="group bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl overflow-hidden transition shadow-sm">
@@ -258,9 +300,9 @@
                 <span class="px-2 py-0.5 text-xs font-semibold rounded ${
                   p.status === 'Ativo' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60' : 'bg-slate-800 text-slate-400'
                 }">${p.status || 'Ativo'}</span>
-                <a href="${linkConsulta}" target="_blank" onclick="event.stopPropagation()"
-                  class="text-xs text-blue-400 hover:text-blue-300 underline flex items-center gap-1">
-                  🔗 Abrir no Tribunal
+                <a href="${linkPrincipal.url}" target="_blank" onclick="event.stopPropagation()"
+                  class="text-xs text-blue-400 hover:text-blue-300 underline flex items-center gap-1 font-medium">
+                  🔗 Abrir no ${linkPrincipal.nome}
                 </a>
               </div>
               <div class="flex items-center gap-1">
@@ -362,18 +404,21 @@
       }
     }
 
-    // Modal de Histórico (Ordenado Decrescente: mais novo para mais antigo)
+    // Modal de Histórico: Ordenado do mais recente para o mais antigo (decrescente)
     async function verMovimentacoes(numProcesso, titulo, tribunal) {
       document.getElementById("movProcessoTitulo").innerText = titulo;
       document.getElementById("movProcessoSubtitulo").innerText = numProcesso;
       
       const linkContainer = document.getElementById("movLinkTribunalContainer");
-      const link = gerarLinkProcesso(numProcesso, tribunal);
-      linkContainer.innerHTML = `
-        <a href="${link}" target="_blank" class="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 bg-blue-950/60 border border-blue-800/80 px-2.5 py-1 rounded-md transition">
-          <span>🔗</span> Acessar autos completos no Tribunal
+      const links = obterLinksTribunal(numProcesso, tribunal);
+      
+      // Cria botões com links diretos
+      linkContainer.innerHTML = links.map(l => `
+        <a href="${l.url}" target="_blank" 
+          class="inline-flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 bg-blue-950/60 border border-blue-800/80 px-2 py-1 rounded-md transition font-medium">
+          <span>🔗</span> ${l.nome}
         </a>
-      `;
+      `).join('');
 
       const lista = document.getElementById("movimentacoesLista");
       lista.innerHTML = `<p class="text-center text-xs text-slate-500 py-6">Carregando...</p>`;
@@ -382,7 +427,6 @@
       try {
         const res = await apiRequest("movimentacoes", { processo: numProcesso });
         if (res.success && res.data.length > 0) {
-          // ORDENAÇÃO DECRESCENTE (do maior para o menor)
           const ordenados = [...res.data].sort((a, b) => {
             const dataA = a.dataMovimentacao ? new Date(a.dataMovimentacao).getTime() : 0;
             const dataB = b.dataMovimentacao ? new Date(b.dataMovimentacao).getTime() : 0;
