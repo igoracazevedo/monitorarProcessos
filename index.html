@@ -66,13 +66,20 @@
     }
 
     async function consultarDataJud(numeroLimpo, tribunal) {
-      const url = `https://api-publica.datajud.cnj.jus.br/api_publica_${tribunal}/_search`;
+      const urlDestino = `https://api-publica.datajud.cnj.jus.br/api_publica_${tribunal}/_search`;
+      // Proxy para contornar o bloqueio de CORS do navegador
+      const url = `https://corsproxy.io/?url=${encodeURIComponent(urlDestino)}`;
+
       const res = await fetch(url, {
         method: "POST",
-        headers: { "Authorization": `APIKey ${API_KEY}`, "Content-Type": "application/json" },
+        headers: { 
+          "Authorization": `APIKey ${API_KEY}`, 
+          "Content-Type": "application/json" 
+        },
         body: JSON.stringify({ query: { match: { numeroProcesso: numeroLimpo } } })
       });
-      if (!res.ok) return null;
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       return data.hits?.hits?.[0]?._source || null;
     }
