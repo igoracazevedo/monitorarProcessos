@@ -173,5 +173,14 @@
 
     carregarTodos();
   </script>
+  <script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js")
+        .then(() => console.log("Service Worker ativo"))
+        .catch((err) => console.error("Falha ao registrar Service Worker:", err));
+    });
+  }
+</script>
 </body>
 </html>
