@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Controle de Processos</title>
+  <title>IAZ Jud - Monitoramento Processual</title>
   <meta name="theme-color" content="#090d16">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,39 +18,55 @@
 
   <!-- Header -->
   <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-30 shadow-lg">
-    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div>
-        <h1 class="font-bold text-lg text-slate-100 leading-tight">Meus Processos</h1>
-        <p class="text-xs text-slate-400">Monitoramento Judicial</p>
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-3 min-w-0">
+        <img id="headerLogo" src="" alt="Logo" class="hidden h-10 w-auto max-w-[90px] sm:max-w-[120px] object-contain rounded border border-slate-800 bg-slate-950 p-0.5">
+        
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="font-bold text-base sm:text-lg text-slate-100 leading-tight">IAZ Jud</h1>
+            <span id="headerEmpresaNome" class="hidden text-[11px] sm:text-xs px-2 py-0.5 rounded bg-slate-800 text-blue-400 border border-slate-700/80 font-semibold truncate max-w-[200px]"></span>
+          </div>
+          <p class="text-xs text-slate-400 truncate">Monitoramento Processual</p>
+        </div>
       </div>
-      <div class="flex items-center gap-2">
+
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
         <button id="btnSync" onclick="sincronizarDataJud()" title="Consultar DataJud Agora" 
-          class="bg-amber-600 hover:bg-amber-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-1 shadow transition">
-          <span id="syncIcon">⚡</span> <span id="syncText">Checar DataJud</span>
+          class="bg-amber-600 hover:bg-amber-500 text-white font-medium px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-1 shadow transition">
+          <span id="syncIcon">⚡</span> <span id="syncText" class="hidden sm:inline">Checar DataJud</span>
         </button>
-        <button onclick="openConfigModal()" title="Configurações" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+        <button onclick="openConfigModal()" title="Configurações da API" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
           ⚙️
         </button>
-        <button onclick="openProcessModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-1 shadow">
+        <button onclick="openProcessModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-1 shadow">
           <span>+</span> Novo
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Filtro e Busca -->
+  <!-- Filtro por Empresa e Busca -->
   <main class="max-w-4xl mx-auto px-4 py-4 space-y-4">
-    <div class="flex gap-2">
-      <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por número, tipo, apelido, partes, vara ou tribunal..." 
-        class="w-full px-3 py-2 bg-slate-900 border border-slate-800 text-slate-100 rounded-lg text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
-      <button onclick="carregarProcessos()" title="Atualizar Lista" class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm hover:bg-slate-800 shadow-sm text-slate-300">
-        🔄
-      </button>
+    <div class="flex flex-col sm:flex-row gap-2">
+      <!-- Seletor de Empresa para Filtrar -->
+      <select id="empresaFilter" onchange="aoFiltrarEmpresa()" 
+        class="px-3 py-2 bg-slate-900 border border-slate-800 text-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm sm:w-56 font-medium">
+        <option value="">Todas as Empresas</option>
+      </select>
+
+      <div class="flex gap-2 flex-1">
+        <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por número, tipo, apelido, partes, vara ou tribunal..." 
+          class="w-full px-3 py-2 bg-slate-900 border border-slate-800 text-slate-100 rounded-lg text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+        <button onclick="carregarProcessos()" title="Atualizar Lista" class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm hover:bg-slate-800 shadow-sm text-slate-300">
+          🔄
+        </button>
+      </div>
     </div>
 
     <!-- Lista de Processos Agrupados por Tipo -->
     <div id="processosContainer" class="space-y-3">
-      <div class="text-center py-12 text-slate-500 text-sm">Carregando processos...</div>
+      <div class="text-center py-12 text-slate-500 text-sm">Carregando dados...</div>
     </div>
   </main>
 
@@ -61,6 +77,13 @@
       <form id="processForm" onsubmit="salvarProcesso(event)" class="space-y-3">
         <input type="hidden" id="formMode" value="add">
         
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Empresa Vinculada*</label>
+          <select id="campoEmpresa" required class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">Selecione uma empresa...</option>
+          </select>
+        </div>
+
         <div>
           <label class="block text-xs font-semibold text-slate-400 mb-1">Número do Processo (CNJ)*</label>
           <input type="text" id="campoProcesso" required oninput="aoDigitarProcesso(this.value)" placeholder="0000000-00.0000.0.00.0000"
@@ -80,7 +103,6 @@
           </div>
         </div>
 
-        <!-- Tipo e Status -->
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs font-semibold text-slate-400 mb-1">Tipo de Processo</label>
@@ -178,6 +200,7 @@
     const DEFAULT_API_URL = "SUA_URL_DO_WEBAPP_AQUI";
     let API_URL = localStorage.getItem("PROCESSOS_API_URL") || DEFAULT_API_URL;
     let processosData = [];
+    let empresasData = [];
 
     window.addEventListener("DOMContentLoaded", () => {
       if (!API_URL || API_URL === "SUA_URL_DO_WEBAPP_AQUI") {
@@ -204,11 +227,14 @@
 
     async function carregarProcessos() {
       const container = document.getElementById("processosContainer");
-      container.innerHTML = `<div class="text-center py-12 text-slate-500 text-sm">Carregando processos...</div>`;
+      container.innerHTML = `<div class="text-center py-12 text-slate-500 text-sm">Carregando dados...</div>`;
       try {
         const res = await apiRequest("list");
         if (res.success) {
           processosData = res.data;
+          empresasData = res.empresas || [];
+          atualizarSeletoresEmpresa();
+          atualizarIdentidadeVisual();
           renderProcessos();
         } else {
           container.innerHTML = `<div class="text-center text-red-400 text-sm py-4">Erro ao carregar: ${res.error}</div>`;
@@ -216,6 +242,62 @@
       } catch (err) {
         container.innerHTML = `<div class="text-center text-red-400 text-sm py-4">Falha na conexão com a API. Verifique a URL nas configurações.</div>`;
       }
+    }
+
+    // Atualiza os dropdowns de empresas no filtro e no modal
+    function atualizarSeletoresEmpresa() {
+      const filtro = document.getElementById("empresaFilter");
+      const campo = document.getElementById("campoEmpresa");
+      const valorFiltroAtual = filtro.value;
+
+      filtro.innerHTML = `<option value="">Todas as Empresas</option>` + empresasData.map(e => `
+        <option value="${e.codigo}">${e.nome || e.codigo}</option>
+      `).join('');
+      filtro.value = valorFiltroAtual;
+
+      campo.innerHTML = `<option value="">Selecione uma empresa...</option>` + empresasData.map(e => `
+        <option value="${e.codigo}">${e.codigo} - ${e.nome}</option>
+      `).join('');
+    }
+
+    function aoFiltrarEmpresa() {
+      atualizarIdentidadeVisual();
+      renderProcessos();
+    }
+
+    // Exibe o logo e o nome da empresa selecionada (ou a primeira da planilha)
+    function atualizarIdentidadeVisual() {
+      const codSelecionado = document.getElementById("empresaFilter").value;
+      let emp = null;
+
+      if (codSelecionado) {
+        emp = empresasData.find(e => String(e.codigo).trim() === String(codSelecionado).trim());
+      } else if (empresasData.length > 0) {
+        emp = empresasData[0]; // Padrão: primeira empresa cadastrada
+      }
+
+      const headerLogo = document.getElementById("headerLogo");
+      const headerNome = document.getElementById("headerEmpresaNome");
+
+      if (emp && emp.logo) {
+        headerLogo.src = emp.logo;
+        headerLogo.classList.remove("hidden");
+      } else {
+        headerLogo.classList.add("hidden");
+      }
+
+      if (emp && emp.nome) {
+        headerNome.innerText = emp.nome;
+        headerNome.classList.remove("hidden");
+      } else {
+        headerNome.classList.add("hidden");
+      }
+    }
+
+    function obterNomeEmpresa(cod) {
+      if (!cod) return "";
+      const emp = empresasData.find(e => String(e.codigo).trim() === String(cod).trim());
+      return emp ? (emp.nome || emp.codigo) : cod;
     }
 
     function calcularDiasDesde(dataStr) {
@@ -296,24 +378,32 @@
 
     function renderProcessos() {
       const query = document.getElementById("searchInput").value.toLowerCase();
+      const empresaFiltro = document.getElementById("empresaFilter").value;
       const container = document.getElementById("processosContainer");
       
-      const filtrados = processosData.filter(p => 
-        (p.processo || '').toLowerCase().includes(query) ||
-        (p.apelido || '').toLowerCase().includes(query) ||
-        (p.tribunal || '').toLowerCase().includes(query) ||
-        (p.tipo || '').toLowerCase().includes(query) ||
-        (p.reclamante || '').toLowerCase().includes(query) ||
-        (p.reclamado || '').toLowerCase().includes(query) ||
-        (p.vara || '').toLowerCase().includes(query)
-      );
+      const filtrados = processosData.filter(p => {
+        const matchesEmpresa = !empresaFiltro || String(p.empresa || '').trim() === String(empresaFiltro).trim();
+        const nomeEmp = obterNomeEmpresa(p.empresa).toLowerCase();
+        
+        const matchesQuery = 
+          (p.processo || '').toLowerCase().includes(query) ||
+          (p.apelido || '').toLowerCase().includes(query) ||
+          (p.tribunal || '').toLowerCase().includes(query) ||
+          (p.tipo || '').toLowerCase().includes(query) ||
+          (p.reclamante || '').toLowerCase().includes(query) ||
+          (p.reclamado || '').toLowerCase().includes(query) ||
+          (p.vara || '').toLowerCase().includes(query) ||
+          nomeEmp.includes(query);
+
+        return matchesEmpresa && matchesQuery;
+      });
 
       if (filtrados.length === 0) {
         container.innerHTML = `<div class="bg-slate-900 p-8 rounded-xl border border-slate-800 text-center text-slate-500 text-sm">Nenhum processo encontrado.</div>`;
         return;
       }
 
-      // Agrupa os processos por Tipo
+      // Agrupamento por Tipo
       const grupos = {};
       filtrados.forEach(p => {
         const tipo = (p.tipo && p.tipo.trim()) ? p.tipo.trim() : "Cível";
@@ -321,7 +411,6 @@
         grupos[tipo].push(p);
       });
 
-      // Ordenação das categorias
       const ordemTipos = ["Trabalhista", "Cível", "Criminal", "Tributário", "Previdenciário", "Eleitoral", "Outro"];
       const tiposOrdenados = Object.keys(grupos).sort((a, b) => {
         const idxA = ordemTipos.indexOf(a);
@@ -332,11 +421,9 @@
         return a.localeCompare(b);
       });
 
-      // Renderiza cada grupo como uma guia sanfonada que abre ao clicar
       container.innerHTML = tiposOrdenados.map(tipo => {
         const listaDoTipo = grupos[tipo];
 
-        // Ordena os processos do mais novo para o mais antigo com base na última data
         listaDoTipo.sort((a, b) => {
           const tA = a.ultimaData ? new Date(a.ultimaData).getTime() : 0;
           const tB = b.ultimaData ? new Date(b.ultimaData).getTime() : 0;
@@ -345,7 +432,6 @@
 
         const total = listaDoTipo.length;
 
-        // Ícone de cada tipo
         let icone = "📁";
         const tLow = tipo.toLowerCase();
         if (tLow.includes("trabalh")) icone = "💼";
@@ -360,6 +446,7 @@
           const dataFormatada = p.ultimaData ? new Date(p.ultimaData).toLocaleDateString('pt-BR') : 'Sem registro';
           const linksTribunal = obterLinksTribunal(p.processo, p.tribunal);
           const linkPrincipal = linksTribunal[0];
+          const nomeEmpresa = obterNomeEmpresa(p.empresa);
 
           return `
           <details class="group/item bg-slate-950 border border-slate-800/80 hover:border-slate-700 rounded-xl overflow-hidden transition shadow-sm mb-2.5">
@@ -367,6 +454,7 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5 flex-wrap mb-1">
                   <span class="text-sm font-bold text-slate-100 truncate">${p.apelido || 'Sem apelido'}</span>
+                  ${nomeEmpresa ? `<span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-slate-800 text-blue-300 border border-slate-700">🏢 ${nomeEmpresa}</span>` : ''}
                   ${p.tribunal ? `<span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-blue-950 text-blue-400 border border-blue-800/60">${p.tribunal}</span>` : ''}
                 </div>
                 <p class="text-xs text-slate-400 font-mono truncate select-all">${p.processo}</p>
@@ -398,7 +486,6 @@
                 </div>
               </div>
 
-              <!-- Dados Cadastrais: Reclamante, Reclamado e Vara -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-900/80 border border-slate-800 p-2.5 rounded-lg">
                 <div class="sm:col-span-2">
                   <span class="text-slate-500 font-semibold">🏛️ Vara:</span> 
@@ -414,7 +501,6 @@
                 </div>
               </div>
 
-              <!-- Rodapé da Guia com Link e Histórico -->
               <div class="flex items-center justify-between pt-1 border-t border-slate-850 flex-wrap gap-2">
                 <div class="flex items-center gap-3">
                   <span class="text-xs text-slate-500 truncate max-w-[180px]" title="${p.email || ''}">✉️ ${p.email || 'Sem e-mail'}</span>
@@ -466,7 +552,7 @@
       btn.disabled = true;
       btn.classList.add("opacity-60", "cursor-not-allowed");
       icon.classList.add("animate-spin");
-      txt.innerText = "Consultando...";
+      if (txt) txt.innerText = "Consultando...";
 
       try {
         const res = await apiRequest("sync", {}, "POST");
@@ -482,7 +568,7 @@
         btn.disabled = false;
         btn.classList.remove("opacity-60", "cursor-not-allowed");
         icon.classList.remove("animate-spin");
-        txt.innerText = "Checar DataJud";
+        if (txt) txt.innerText = "Checar DataJud";
       }
     }
 
@@ -494,6 +580,7 @@
       btn.disabled = true;
 
       const payload = {
+        empresa: document.getElementById("campoEmpresa").value.trim(),
         processo: document.getElementById("campoProcesso").value.trim(),
         apelido: document.getElementById("campoApelido").value.trim(),
         tribunal: document.getElementById("campoTribunal").value.trim(),
@@ -637,6 +724,7 @@
       document.getElementById("modalTitle").innerText = "Editar Processo";
       document.getElementById("campoProcesso").value = p.processo;
       document.getElementById("campoProcesso").readOnly = true;
+      document.getElementById("campoEmpresa").value = p.empresa || "";
       document.getElementById("campoApelido").value = p.apelido || "";
       document.getElementById("campoTribunal").value = p.tribunal || "";
       document.getElementById("campoTipo").value = p.tipo || "Cível";
