@@ -41,7 +41,7 @@
   <!-- Filtro e Busca -->
   <main class="max-w-4xl mx-auto px-4 py-4 space-y-4">
     <div class="flex gap-2">
-      <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por número, apelido, partes, vara ou tribunal..." 
+      <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por número, tipo, apelido, partes, vara ou tribunal..." 
         class="w-full px-3 py-2 bg-slate-900 border border-slate-800 text-slate-100 rounded-lg text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
       <button onclick="carregarProcessos()" title="Atualizar Lista" class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm hover:bg-slate-800 shadow-sm text-slate-300">
         🔄
@@ -70,7 +70,7 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs font-semibold text-slate-400 mb-1">Apelido/Identificador</label>
-            <input type="text" id="campoApelido" placeholder="Ex: Ação Cobrança"
+            <input type="text" id="campoApelido" placeholder="Ex: Causa Cível"
               class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
           </div>
           <div>
@@ -80,31 +80,19 @@
           </div>
         </div>
 
-        <!-- Campos de Partes e Vara -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Reclamante (Autor)</label>
-            <input type="text" id="campoReclamante" placeholder="Preenchido via DataJud ou manual"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Reclamado (Réu)</label>
-            <input type="text" id="campoReclamado" placeholder="Preenchido via DataJud ou manual"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">Vara / Unidade Judiciária</label>
-          <input type="text" id="campoVara" placeholder="Ex: 2ª Vara Cível da Comarca de Fortaleza"
-            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-
+        <!-- Tipo e Status -->
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">E-mail de Notificação</label>
-            <input type="email" id="campoEmail" placeholder="seu@email.com"
-              class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Tipo de Processo</label>
+            <select id="campoTipo" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="Cível">Cível</option>
+              <option value="Trabalhista">Trabalhista</option>
+              <option value="Criminal">Criminal</option>
+              <option value="Tributário">Tributário</option>
+              <option value="Previdenciário">Previdenciário</option>
+              <option value="Eleitoral">Eleitoral</option>
+              <option value="Outro">Outro</option>
+            </select>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-400 mb-1">Status</label>
@@ -114,6 +102,31 @@
               <option value="Suspenso">Suspenso</option>
             </select>
           </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Reclamante (Autor)</label>
+            <input type="text" id="campoReclamante" placeholder="DataJud ou manual"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Reclamado (Réu)</label>
+            <input type="text" id="campoReclamado" placeholder="DataJud ou manual"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Vara / Unidade Judiciária</label>
+          <input type="text" id="campoVara" placeholder="Ex: 2ª Vara Cível de Fortaleza"
+            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">E-mail de Notificação</label>
+          <input type="email" id="campoEmail" placeholder="seu@email.com"
+            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
         <div class="flex justify-end gap-2 pt-4">
@@ -228,6 +241,15 @@
       });
     }
 
+    function obterEstiloTipo(tipo) {
+      const t = String(tipo || "").toLowerCase();
+      if (t.includes("trabalh")) return "bg-amber-950 text-amber-400 border-amber-800/60";
+      if (t.includes("crim")) return "bg-red-950 text-red-400 border-red-800/60";
+      if (t.includes("tribut")) return "bg-purple-950 text-purple-400 border-purple-800/60";
+      if (t.includes("previd")) return "bg-teal-950 text-teal-400 border-teal-800/60";
+      return "bg-sky-950 text-sky-400 border-sky-800/60"; // Cível
+    }
+
     function obterLinksTribunal(numProcesso, tribunal) {
       const d = String(numProcesso).replace(/\D/g, "");
       const trib = String(tribunal || "").toUpperCase().trim();
@@ -288,6 +310,7 @@
         (p.processo || '').toLowerCase().includes(query) ||
         (p.apelido || '').toLowerCase().includes(query) ||
         (p.tribunal || '').toLowerCase().includes(query) ||
+        (p.tipo || '').toLowerCase().includes(query) ||
         (p.reclamante || '').toLowerCase().includes(query) ||
         (p.reclamado || '').toLowerCase().includes(query) ||
         (p.vara || '').toLowerCase().includes(query)
@@ -303,13 +326,15 @@
         const dataFormatada = p.ultimaData ? new Date(p.ultimaData).toLocaleDateString('pt-BR') : 'Sem registro';
         const linksTribunal = obterLinksTribunal(p.processo, p.tribunal);
         const linkPrincipal = linksTribunal[0];
+        const estiloTipo = obterEstiloTipo(p.tipo);
 
         return `
         <details class="group bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl overflow-hidden transition shadow-sm">
           <summary class="cursor-pointer select-none p-3.5 sm:p-4 flex items-center justify-between gap-3 bg-slate-900 group-hover:bg-slate-850">
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 flex-wrap mb-1">
+              <div class="flex items-center gap-1.5 flex-wrap mb-1">
                 <span class="text-sm font-bold text-slate-100 truncate">${p.apelido || 'Sem apelido'}</span>
+                <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded border ${estiloTipo}">${p.tipo || 'Cível'}</span>
                 ${p.tribunal ? `<span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-blue-950 text-blue-400 border border-blue-800/60">${p.tribunal}</span>` : ''}
               </div>
               <p class="text-xs text-slate-400 font-mono truncate select-all">${p.processo}</p>
@@ -326,8 +351,6 @@
           </summary>
 
           <div class="px-4 pb-4 pt-2 border-t border-slate-800/80 bg-slate-950/40 space-y-3">
-            
-            <!-- Barra Superior do Detalhe -->
             <div class="flex items-center justify-between flex-wrap gap-2">
               <div class="flex items-center gap-2">
                 <span class="px-2 py-0.5 text-xs font-semibold rounded ${
@@ -359,7 +382,6 @@
               </div>
             </div>
 
-            <!-- Rodapé da Guia com Link e Histórico -->
             <div class="flex items-center justify-between pt-1 border-t border-slate-850 flex-wrap gap-2">
               <div class="flex items-center gap-3">
                 <span class="text-xs text-slate-500 truncate max-w-[180px]" title="${p.email || ''}">✉️ ${p.email || 'Sem e-mail'}</span>
@@ -417,6 +439,7 @@
         processo: document.getElementById("campoProcesso").value.trim(),
         apelido: document.getElementById("campoApelido").value.trim(),
         tribunal: document.getElementById("campoTribunal").value.trim(),
+        tipo: document.getElementById("campoTipo").value,
         reclamante: document.getElementById("campoReclamante").value.trim(),
         reclamado: document.getElementById("campoReclamado").value.trim(),
         vara: document.getElementById("campoVara").value.trim(),
@@ -497,20 +520,28 @@
       }
     }
 
-    function extrairTribunal(processo) {
+    function extrairTribunalETipo(processo) {
       const digitos = processo.replace(/\D/g, "");
-      if (digitos.length < 16) return "";
+      if (digitos.length < 16) return { tribunal: "", tipo: "" };
 
       const j = digitos.substring(13, 14);
       const tr = digitos.substring(14, 16);
+      let tribunal = "";
+      let tipo = "Cível";
 
-      if (j === "1") return "STF";
-      if (j === "2") return "CNJ";
-      if (j === "3") return "STJ";
-      if (j === "4") return `TRF${parseInt(tr, 10)}`;
-      if (j === "5") return `TRT${parseInt(tr, 10)}`;
-      if (j === "6") return tr === "00" ? "TSE" : `TRE-${tr}`;
-      if (j === "7") return "STM";
+      if (j === "1") tribunal = "STF";
+      if (j === "2") tribunal = "CNJ";
+      if (j === "3") tribunal = "STJ";
+      if (j === "4") tribunal = `TRF${parseInt(tr, 10)}`;
+      if (j === "5") {
+        tribunal = `TRT${parseInt(tr, 10)}`;
+        tipo = "Trabalhista";
+      }
+      if (j === "6") {
+        tribunal = tr === "00" ? "TSE" : `TRE-${tr}`;
+        tipo = "Eleitoral";
+      }
+      if (j === "7") tribunal = "STM";
 
       if (j === "8") {
         const tjs = {
@@ -522,15 +553,17 @@
           "21": "TJRS", "22": "TJRO", "23": "TJRR", "24": "TJSC",
           "25": "TJSE", "26": "TJSP", "27": "TJTO"
         };
-        return tjs[tr] || `TJ-${tr}`;
+        tribunal = tjs[tr] || `TJ-${tr}`;
       }
-      if (j === "9") return "TJM";
-      return "";
+      if (j === "9") tribunal = "TJM";
+
+      return { tribunal, tipo };
     }
 
     function aoDigitarProcesso(valor) {
-      const trib = extrairTribunal(valor);
-      if (trib) document.getElementById("campoTribunal").value = trib;
+      const { tribunal, tipo } = extrairTribunalETipo(valor);
+      if (tribunal) document.getElementById("campoTribunal").value = tribunal;
+      if (tipo) document.getElementById("campoTipo").value = tipo;
     }
 
     function openProcessModal() {
@@ -548,6 +581,7 @@
       document.getElementById("campoProcesso").readOnly = true;
       document.getElementById("campoApelido").value = p.apelido || "";
       document.getElementById("campoTribunal").value = p.tribunal || "";
+      document.getElementById("campoTipo").value = p.tipo || "Cível";
       document.getElementById("campoReclamante").value = p.reclamante || "";
       document.getElementById("campoReclamado").value = p.reclamado || "";
       document.getElementById("campoVara").value = p.vara || "";
