@@ -25,7 +25,7 @@
       <!-- Topo da Sidebar -->
       <div class="p-4 border-b border-slate-800 flex items-center justify-between">
         <div class="flex items-center gap-2.5 min-w-0">
-          <img id="sideHeaderLogo" src="" alt="Logo" class="hidden h-9 w-auto max-w-[48px] object-contain rounded bg-slate-950 p-1 border border-slate-800">
+          <img id="sideHeaderLogo" src="" alt="Logo" onerror="this.classList.add('hidden')" class="hidden h-9 w-auto max-w-[48px] object-contain rounded bg-slate-950 p-1 border border-slate-800">
           <div class="min-w-0">
             <h1 class="font-bold text-sm text-slate-100 leading-tight">IAZ Jud</h1>
             <p id="sideHeaderEmpresa" class="text-[11px] text-blue-400 font-medium truncate">Monitoramento</p>
@@ -75,9 +75,10 @@
           <button onclick="toggleSidebar()" class="md:hidden p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
             ☰
           </button>
+          <img id="topHeaderLogo" src="" alt="Logo" onerror="this.classList.add('hidden')" class="hidden md:block h-8 w-auto max-w-[42px] object-contain rounded bg-slate-950 p-1 border border-slate-800">
           <div>
             <h2 class="font-bold text-sm sm:text-base text-slate-100">Painel de Processos</h2>
-            <p class="text-[11px] text-slate-400">Visão Geral dos Autos</p>
+            <p id="topHeaderSubtitulo" class="text-[11px] text-slate-400">Visão Geral dos Autos</p>
           </div>
         </div>
 
@@ -142,10 +143,30 @@
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">URL do Logotipo</label>
-          <input type="text" id="campoEmpLogo" placeholder="https://exemplo.com/logo.png"
-            class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+        <!-- Opção de Upload ou Link de Logotipo -->
+        <div class="space-y-2">
+          <label class="block text-xs font-semibold text-slate-400">Logotipo da Empresa</label>
+          
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-1">Subir do dispositivo (recomendado):</label>
+            <input type="file" id="campoEmpFile" accept="image/*" onchange="processarArquivoLogo(event)"
+              class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700 cursor-pointer">
+          </div>
+
+          <div>
+            <label class="block text-[11px] text-slate-500 mb-1">Ou cole a URL direta / link do Google Drive:</label>
+            <input type="text" id="campoEmpLogo" oninput="aoDigitarLogoUrl(this.value)" placeholder="https://..."
+              class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none font-mono">
+          </div>
+
+          <!-- Preview da Imagem -->
+          <div id="logoPreviewContainer" class="hidden mt-2 p-2 bg-slate-900 rounded-lg border border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <img id="logoPreviewImg" src="" class="h-8 w-auto max-w-[60px] object-contain rounded bg-slate-950 p-1 border border-slate-700">
+              <span class="text-[11px] text-emerald-400 font-medium">Logotipo carregado com sucesso</span>
+            </div>
+            <button type="button" onclick="limparLogoForm()" class="text-xs text-red-400 hover:text-red-300">Remover</button>
+          </div>
         </div>
 
         <div class="flex justify-end pt-1">
@@ -296,6 +317,7 @@
     let API_URL = localStorage.getItem("PROCESSOS_API_URL") || DEFAULT_API_URL;
     let processosData = [];
     let empresasData = [];
+    let logoTempBase64 = "";
 
     window.addEventListener("DOMContentLoaded", () => {
       if (!API_URL || API_URL === "SUA_URL_DO_WEBAPP_AQUI") {
@@ -319,7 +341,83 @@
       overlay.classList.add("hidden");
     }
 
-    // Calcula o próximo código automático (ex: EMP-01, EMP-02...)
+    // Converte links do Google Drive para links diretos de imagem
+    function tratarUrlImagem(url) {
+      if (!url) return "";
+      const trimmed = url.trim();
+      if (trimmed.startsWith("data:image")) return trimmed;
+
+      const driveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/id=([a-zA-Z0-9_-]+)/);
+      if (driveMatch && driveMatch[1]) {
+        return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
+      }
+      return trimmed;
+    }
+
+    // Compacta a imagem enviada por upload para caber seguramente no Google Sheets (máx 140x140px)
+    function processarArquivoLogo(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 120;
+
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          logoTempBase64 = canvas.toDataURL("image/png");
+          document.getElementById("campoEmpLogo").value = "";
+          exibirPreviewLogo(logoTempBase64);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function aoDigitarLogoUrl(val) {
+      if (val.trim()) {
+        logoTempBase64 = "";
+        document.getElementById("campoEmpFile").value = "";
+        exibirPreviewLogo(tratarUrlImagem(val));
+      } else {
+        document.getElementById("logoPreviewContainer").classList.add("hidden");
+      }
+    }
+
+    function exibirPreviewLogo(src) {
+      const container = document.getElementById("logoPreviewContainer");
+      const img = document.getElementById("logoPreviewImg");
+      img.src = src;
+      container.classList.remove("hidden");
+    }
+
+    function limparLogoForm() {
+      logoTempBase64 = "";
+      document.getElementById("campoEmpFile").value = "";
+      document.getElementById("campoEmpLogo").value = "";
+      document.getElementById("logoPreviewContainer").classList.add("hidden");
+    }
+
     function gerarProximoCodigoEmpresa() {
       if (!empresasData || empresasData.length === 0) return "EMP-01";
       const numeros = empresasData.map(e => {
@@ -387,10 +485,12 @@
         return;
       }
 
-      container.innerHTML = empresasData.map(e => `
+      container.innerHTML = empresasData.map(e => {
+        const logoUrl = tratarUrlImagem(e.logo);
+        return `
         <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-xs">
           <div class="flex items-center gap-2 min-w-0">
-            ${e.logo ? `<img src="${e.logo}" class="h-6 w-6 object-contain rounded bg-slate-950 p-0.5">` : `<span class="text-base">🏢</span>`}
+            ${logoUrl ? `<img src="${logoUrl}" onerror="this.src=''; this.style.display='none'" class="h-6 w-6 object-contain rounded bg-slate-950 p-0.5">` : `<span class="text-base">🏢</span>`}
             <div class="min-w-0">
               <p class="font-bold text-slate-200 truncate">${e.nome}</p>
               <p class="text-[10px] text-slate-400 font-mono">Código: ${e.codigo}</p>
@@ -398,7 +498,8 @@
           </div>
           <button onclick="excluirEmpresa('${e.codigo}')" class="text-red-400 hover:text-red-300 p-1 text-xs">🗑️</button>
         </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function aoFiltrarEmpresa() {
@@ -418,18 +519,27 @@
 
       const sideLogo = document.getElementById("sideHeaderLogo");
       const sideNome = document.getElementById("sideHeaderEmpresa");
+      const topLogo = document.getElementById("topHeaderLogo");
+      const topSub = document.getElementById("topHeaderSubtitulo");
 
-      if (emp && emp.logo) {
-        sideLogo.src = emp.logo;
+      const logoUrl = emp ? tratarUrlImagem(emp.logo) : "";
+
+      if (logoUrl) {
+        sideLogo.src = logoUrl;
         sideLogo.classList.remove("hidden");
+        topLogo.src = logoUrl;
+        topLogo.classList.remove("hidden");
       } else {
         sideLogo.classList.add("hidden");
+        topLogo.classList.add("hidden");
       }
 
       if (emp && emp.nome) {
         sideNome.innerText = emp.nome;
+        topSub.innerText = emp.nome;
       } else {
         sideNome.innerText = "Monitoramento";
+        topSub.innerText = "Visão Geral dos Autos";
       }
     }
 
@@ -445,15 +555,18 @@
       btn.innerText = "Salvando...";
       btn.disabled = true;
 
+      const logoFinal = logoTempBase64 || tratarUrlImagem(document.getElementById("campoEmpLogo").value);
+
       const payload = {
         codigo: document.getElementById("campoEmpCodigo").value.trim(),
         nome: document.getElementById("campoEmpNome").value.trim(),
-        logo: document.getElementById("campoEmpLogo").value.trim()
+        logo: logoFinal
       };
 
       try {
         const res = await apiRequest("add_empresa", payload, "POST");
         if (res.success) {
+          limparLogoForm();
           document.getElementById("empresaForm").reset();
           await carregarProcessos();
           document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
@@ -924,6 +1037,7 @@
 
     function openEmpresaModal() {
       document.getElementById("empresaForm").reset();
+      limparLogoForm();
       document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
       document.getElementById("empresaModal").classList.remove("hidden");
     }
