@@ -41,7 +41,7 @@
   <!-- Filtro e Busca -->
   <main class="max-w-4xl mx-auto px-4 py-4 space-y-4">
     <div class="flex gap-2">
-      <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por número, apelido ou tribunal..." 
+      <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por número, apelido, partes, vara ou tribunal..." 
         class="w-full px-3 py-2 bg-slate-900 border border-slate-800 text-slate-100 rounded-lg text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
       <button onclick="carregarProcessos()" title="Atualizar Lista" class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm hover:bg-slate-800 shadow-sm text-slate-300">
         🔄
@@ -78,6 +78,26 @@
             <input type="text" id="campoTribunal" placeholder="TJCE, TRF5..."
               class="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-lg text-sm text-slate-300 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
           </div>
+        </div>
+
+        <!-- Campos de Partes e Vara -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Reclamante (Autor)</label>
+            <input type="text" id="campoReclamante" placeholder="Preenchido via DataJud ou manual"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Reclamado (Réu)</label>
+            <input type="text" id="campoReclamado" placeholder="Preenchido via DataJud ou manual"
+              class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Vara / Unidade Judiciária</label>
+          <input type="text" id="campoVara" placeholder="Ex: 2ª Vara Cível da Comarca de Fortaleza"
+            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
         <div class="grid grid-cols-2 gap-2">
@@ -208,7 +228,6 @@
       });
     }
 
-    // Decompõe o processo e gera os links compatíveis com a arquitetura de cada tribunal
     function obterLinksTribunal(numProcesso, tribunal) {
       const d = String(numProcesso).replace(/\D/g, "");
       const trib = String(tribunal || "").toUpperCase().trim();
@@ -221,7 +240,6 @@
         const foro = d.slice(16, 20);
         const cnjFormatado = `${numDigAno}.${j}.${tr}.${foro}`;
 
-        // Tribunais e-SAJ (TJCE, TJSP, etc.) - Corrige o erro ARQ-032
         if (trib === "TJCE") {
           links.push({
             nome: "e-SAJ TJCE (1º Grau)",
@@ -255,7 +273,6 @@
         }
       }
 
-      // Portal Nacional do CNJ (Comunica PJe)
       links.push({
         nome: "CNJ (Comunica PJe)",
         url: `https://comunica.pje.jus.br/consulta?numeroUnico=${d}`
@@ -270,7 +287,10 @@
       const filtrados = processosData.filter(p => 
         (p.processo || '').toLowerCase().includes(query) ||
         (p.apelido || '').toLowerCase().includes(query) ||
-        (p.tribunal || '').toLowerCase().includes(query)
+        (p.tribunal || '').toLowerCase().includes(query) ||
+        (p.reclamante || '').toLowerCase().includes(query) ||
+        (p.reclamado || '').toLowerCase().includes(query) ||
+        (p.vara || '').toLowerCase().includes(query)
       );
 
       if (filtrados.length === 0) {
@@ -306,6 +326,8 @@
           </summary>
 
           <div class="px-4 pb-4 pt-2 border-t border-slate-800/80 bg-slate-950/40 space-y-3">
+            
+            <!-- Barra Superior do Detalhe -->
             <div class="flex items-center justify-between flex-wrap gap-2">
               <div class="flex items-center gap-2">
                 <span class="px-2 py-0.5 text-xs font-semibold rounded ${
@@ -321,6 +343,23 @@
               </div>
             </div>
 
+            <!-- Dados Cadastrais: Reclamante, Reclamado e Vara -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-900/60 border border-slate-800/80 p-2.5 rounded-lg">
+              <div class="sm:col-span-2">
+                <span class="text-slate-500 font-semibold">🏛️ Vara:</span> 
+                <span class="text-slate-200">${p.vara || '<span class="text-slate-500 italic">Não informada</span>'}</span>
+              </div>
+              <div>
+                <span class="text-slate-500 font-semibold">👤 Reclamante:</span> 
+                <span class="text-slate-200">${p.reclamante || '<span class="text-slate-500 italic">Não informado</span>'}</span>
+              </div>
+              <div>
+                <span class="text-slate-500 font-semibold">🏢 Reclamado:</span> 
+                <span class="text-slate-200">${p.reclamado || '<span class="text-slate-500 italic">Não informado</span>'}</span>
+              </div>
+            </div>
+
+            <!-- Rodapé da Guia com Link e Histórico -->
             <div class="flex items-center justify-between pt-1 border-t border-slate-850 flex-wrap gap-2">
               <div class="flex items-center gap-3">
                 <span class="text-xs text-slate-500 truncate max-w-[180px]" title="${p.email || ''}">✉️ ${p.email || 'Sem e-mail'}</span>
@@ -378,6 +417,9 @@
         processo: document.getElementById("campoProcesso").value.trim(),
         apelido: document.getElementById("campoApelido").value.trim(),
         tribunal: document.getElementById("campoTribunal").value.trim(),
+        reclamante: document.getElementById("campoReclamante").value.trim(),
+        reclamado: document.getElementById("campoReclamado").value.trim(),
+        vara: document.getElementById("campoVara").value.trim(),
         email: document.getElementById("campoEmail").value.trim(),
         status: document.getElementById("campoStatus").value
       };
@@ -506,6 +548,9 @@
       document.getElementById("campoProcesso").readOnly = true;
       document.getElementById("campoApelido").value = p.apelido || "";
       document.getElementById("campoTribunal").value = p.tribunal || "";
+      document.getElementById("campoReclamante").value = p.reclamante || "";
+      document.getElementById("campoReclamado").value = p.reclamado || "";
+      document.getElementById("campoVara").value = p.vara || "";
       document.getElementById("campoEmail").value = p.email || "";
       document.getElementById("campoStatus").value = p.status || "Ativo";
       document.getElementById("processModal").classList.remove("hidden");
