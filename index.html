@@ -14,63 +14,163 @@
     details[open] > summary .chevron-icon { transform: rotate(180deg); }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans pb-20 sm:pb-8 min-h-screen">
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col md:flex-row">
 
-  <!-- Header -->
-  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-30 shadow-lg">
-    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
-      <div class="flex items-center gap-3 min-w-0">
-        <img id="headerLogo" src="" alt="Logo" class="hidden h-10 w-auto max-w-[90px] sm:max-w-[120px] object-contain rounded border border-slate-800 bg-slate-950 p-0.5">
-        
-        <div class="min-w-0">
-          <div class="flex items-center gap-2 flex-wrap">
-            <h1 class="font-bold text-base sm:text-lg text-slate-100 leading-tight">IAZ Jud</h1>
-            <span id="headerEmpresaNome" class="hidden text-[11px] sm:text-xs px-2 py-0.5 rounded bg-slate-800 text-blue-400 border border-slate-700/80 font-semibold truncate max-w-[200px]"></span>
+  <!-- Overlay para fechar sidebar no celular -->
+  <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden md:hidden"></div>
+
+  <!-- Barra Lateral Esquerda (Sidebar) -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
+    <div>
+      <!-- Topo da Sidebar -->
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <img id="sideHeaderLogo" src="" alt="Logo" class="hidden h-9 w-auto max-w-[48px] object-contain rounded bg-slate-950 p-1 border border-slate-800">
+          <div class="min-w-0">
+            <h1 class="font-bold text-sm text-slate-100 leading-tight">IAZ Jud</h1>
+            <p id="sideHeaderEmpresa" class="text-[11px] text-blue-400 font-medium truncate">Monitoramento</p>
           </div>
-          <p class="text-xs text-slate-400 truncate">Monitoramento Processual</p>
+        </div>
+        <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-slate-200 text-lg p-1">✕</button>
+      </div>
+
+      <!-- Menu de Navegação -->
+      <nav class="p-3 space-y-1.5 text-xs font-medium">
+        <button onclick="fecharSidebar()" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-blue-600/10 text-blue-400 border border-blue-500/20 text-left">
+          <span>📁</span>
+          <span>Painel de Processos</span>
+        </button>
+
+        <button onclick="openEmpresaModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-slate-100 text-left transition">
+          <span>🏢</span>
+          <span>Cadastro de Empresa</span>
+        </button>
+
+        <button onclick="openProcessModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-slate-100 text-left transition">
+          <span>⚖️</span>
+          <span>Cadastro de Processo</span>
+        </button>
+
+        <button onclick="openConfigModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-slate-100 text-left transition">
+          <span>⚙️</span>
+          <span>Configuração do Script</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Botão Rápido de Sincronização no Rodapé da Sidebar -->
+    <div class="p-3 border-t border-slate-800">
+      <button id="btnSideSync" onclick="sincronizarDataJud()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow transition">
+        <span id="sideSyncIcon">⚡</span>
+        <span id="sideSyncText">Checar DataJud</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Área Principal de Conteúdo -->
+  <div class="flex-1 md:ml-64 flex flex-col min-w-0">
+    
+    <!-- Topbar Superior -->
+    <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-30 shadow-md">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-3">
+          <button onclick="toggleSidebar()" class="md:hidden p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            ☰
+          </button>
+          <div>
+            <h2 class="font-bold text-sm sm:text-base text-slate-100">Painel de Processos</h2>
+            <p class="text-[11px] text-slate-400">Visão Geral dos Autos</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="openEmpresaModal()" class="hidden sm:flex bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium px-2.5 py-1.5 rounded-lg items-center gap-1">
+            <span>🏢</span> Empresa
+          </button>
+          <button onclick="openProcessModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-1 shadow">
+            <span>+</span> Novo Processo
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Conteúdo Central -->
+    <main class="max-w-5xl w-full mx-auto px-4 py-4 space-y-4 flex-1">
+      
+      <!-- Barra de Filtros: Empresa e Busca -->
+      <div class="flex flex-col sm:flex-row gap-2">
+        <select id="empresaFilter" onchange="aoFiltrarEmpresa()" 
+          class="px-3 py-2 bg-slate-900 border border-slate-800 text-slate-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm sm:w-56 font-medium">
+          <option value="">Todas as Empresas</option>
+        </select>
+
+        <div class="flex gap-2 flex-1">
+          <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por número, tipo, apelido, partes ou vara..." 
+            class="w-full px-3 py-2 bg-slate-900 border border-slate-800 text-slate-100 rounded-lg text-xs sm:text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+          <button onclick="carregarProcessos()" title="Atualizar Lista" class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm hover:bg-slate-800 shadow-sm text-slate-300">
+            🔄
+          </button>
         </div>
       </div>
 
-      <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-        <button id="btnSync" onclick="sincronizarDataJud()" title="Consultar DataJud Agora" 
-          class="bg-amber-600 hover:bg-amber-500 text-white font-medium px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-1 shadow transition">
-          <span id="syncIcon">⚡</span> <span id="syncText" class="hidden sm:inline">Checar DataJud</span>
-        </button>
-        <button onclick="openConfigModal()" title="Configurações da API" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
-          ⚙️
-        </button>
-        <button onclick="openProcessModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-1 shadow">
-          <span>+</span> Novo
-        </button>
+      <!-- Container das Guias de Processos Agrupados -->
+      <div id="processosContainer" class="space-y-3">
+        <div class="text-center py-12 text-slate-500 text-sm">Carregando processos...</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: Gerenciar / Cadastrar Empresa -->
+  <div id="empresaModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h3 class="text-base font-bold text-slate-100">Gerenciar Empresas</h3>
+          <p class="text-xs text-slate-400">Cadastre suas filiais ou clientes corporativos</p>
+        </div>
+        <button onclick="closeEmpresaModal()" class="text-slate-400 hover:text-slate-200 text-lg font-bold p-1">✕</button>
+      </div>
+
+      <!-- Formulário de Nova Empresa -->
+      <form id="empresaForm" onsubmit="salvarEmpresa(event)" class="space-y-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+        <h4 class="text-xs font-semibold text-blue-400 uppercase tracking-wide">Nova Empresa</h4>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Código*</label>
+            <input type="text" id="campoEmpCodigo" required placeholder="Ex: 01, IAZ"
+              class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-100 uppercase focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Nome da Empresa*</label>
+            <input type="text" id="campoEmpNome" required placeholder="Ex: IAZ Transportes LTDA"
+              class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">URL do Logotipo (ou link direto)</label>
+          <input type="text" id="campoEmpLogo" placeholder="https://exemplo.com/logo.png"
+            class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div class="flex justify-end pt-1">
+          <button type="submit" id="btnSalvarEmp" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium shadow">
+            Adicionar Empresa
+          </button>
+        </div>
+      </form>
+
+      <!-- Lista de Empresas Cadastradas -->
+      <div>
+        <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Empresas Cadastradas</h4>
+        <div id="empresasListaContainer" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+          <p class="text-xs text-slate-500 py-3 text-center">Nenhuma empresa encontrada.</p>
+        </div>
       </div>
     </div>
-  </header>
+  </div>
 
-  <!-- Filtro por Empresa e Busca -->
-  <main class="max-w-4xl mx-auto px-4 py-4 space-y-4">
-    <div class="flex flex-col sm:flex-row gap-2">
-      <!-- Seletor de Empresa para Filtrar -->
-      <select id="empresaFilter" onchange="aoFiltrarEmpresa()" 
-        class="px-3 py-2 bg-slate-900 border border-slate-800 text-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm sm:w-56 font-medium">
-        <option value="">Todas as Empresas</option>
-      </select>
-
-      <div class="flex gap-2 flex-1">
-        <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por número, tipo, apelido, partes, vara ou tribunal..." 
-          class="w-full px-3 py-2 bg-slate-900 border border-slate-800 text-slate-100 rounded-lg text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
-        <button onclick="carregarProcessos()" title="Atualizar Lista" class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm hover:bg-slate-800 shadow-sm text-slate-300">
-          🔄
-        </button>
-      </div>
-    </div>
-
-    <!-- Lista de Processos Agrupados por Tipo -->
-    <div id="processosContainer" class="space-y-3">
-      <div class="text-center py-12 text-slate-500 text-sm">Carregando dados...</div>
-    </div>
-  </main>
-
-  <!-- Modal: Adicionar/Editar Processo -->
+  <!-- MODAL: Adicionar / Editar Processo -->
   <div id="processModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
       <h3 id="modalTitle" class="text-base font-bold text-slate-100 mb-4">Novo Processo</h3>
@@ -159,7 +259,7 @@
     </div>
   </div>
 
-  <!-- Modal: Movimentações -->
+  <!-- MODAL: Histórico de Movimentações -->
   <div id="movModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[85vh] flex flex-col">
       <div class="flex items-start justify-between pb-3 border-b border-slate-800 gap-2">
@@ -182,15 +282,15 @@
     </div>
   </div>
 
-  <!-- Modal: Configuração da API -->
+  <!-- MODAL: Configuração do Script -->
   <div id="configModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-5 shadow-2xl">
-      <h3 class="text-base font-bold text-slate-100 mb-2">Configurar URL da API</h3>
-      <p class="text-xs text-slate-400 mb-3">Cole a URL de implantação terminada em <code>/exec</code>:</p>
+      <h3 class="text-base font-bold text-slate-100 mb-2">Configuração do Script</h3>
+      <p class="text-xs text-slate-400 mb-3">Cole a URL de implantação da API terminada em <code>/exec</code>:</p>
       <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec"
         class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none mb-4">
       <div class="flex justify-end gap-2">
-        <button onclick="closeConfigModal()" class="px-4 py-2 border border-slate-700 rounded-lg text-sm font-medium text-slate-300">Fechar</button>
+        <button onclick="closeConfigModal()" class="px-4 py-2 border border-slate-700 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800">Fechar</button>
         <button onclick="salvarApiUrl()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium">Salvar</button>
       </div>
     </div>
@@ -209,6 +309,21 @@
         carregarProcessos();
       }
     });
+
+    // Controle da Barra Lateral
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      const overlay = document.getElementById("sidebarOverlay");
+      sidebar.classList.toggle("-translate-x-full");
+      overlay.classList.toggle("hidden");
+    }
+
+    function fecharSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      const overlay = document.getElementById("sidebarOverlay");
+      sidebar.classList.add("-translate-x-full");
+      overlay.classList.add("hidden");
+    }
 
     async function apiRequest(action, data = null, method = "GET") {
       const url = method === "GET" 
@@ -234,29 +349,50 @@
           processosData = res.data;
           empresasData = res.empresas || [];
           atualizarSeletoresEmpresa();
+          renderizarListaEmpresasModal();
           atualizarIdentidadeVisual();
           renderProcessos();
         } else {
-          container.innerHTML = `<div class="text-center text-red-400 text-sm py-4">Erro ao carregar: ${res.error}</div>`;
+          container.innerHTML = `<div class="text-center text-red-400 text-sm py-4">Erro: ${res.error}</div>`;
         }
       } catch (err) {
-        container.innerHTML = `<div class="text-center text-red-400 text-sm py-4">Falha na conexão com a API. Verifique a URL nas configurações.</div>`;
+        container.innerHTML = `<div class="text-center text-red-400 text-sm py-4">Falha ao conectar com o script. Verifique as configurações.</div>`;
       }
     }
 
-    // Atualiza os dropdowns de empresas no filtro e no modal
     function atualizarSeletoresEmpresa() {
       const filtro = document.getElementById("empresaFilter");
       const campo = document.getElementById("campoEmpresa");
-      const valorFiltroAtual = filtro.value;
+      const valorAtual = filtro.value;
 
       filtro.innerHTML = `<option value="">Todas as Empresas</option>` + empresasData.map(e => `
         <option value="${e.codigo}">${e.nome || e.codigo}</option>
       `).join('');
-      filtro.value = valorFiltroAtual;
+      filtro.value = valorAtual;
 
       campo.innerHTML = `<option value="">Selecione uma empresa...</option>` + empresasData.map(e => `
         <option value="${e.codigo}">${e.codigo} - ${e.nome}</option>
+      `).join('');
+    }
+
+    function renderizarListaEmpresasModal() {
+      const container = document.getElementById("empresasListaContainer");
+      if (empresasData.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500 py-3 text-center">Nenhuma empresa cadastrada na planilha.</p>`;
+        return;
+      }
+
+      container.innerHTML = empresasData.map(e => `
+        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-xs">
+          <div class="flex items-center gap-2 min-w-0">
+            ${e.logo ? `<img src="${e.logo}" class="h-6 w-6 object-contain rounded bg-slate-950 p-0.5">` : `<span class="text-base">🏢</span>`}
+            <div class="min-w-0">
+              <p class="font-bold text-slate-200 truncate">${e.nome}</p>
+              <p class="text-[10px] text-slate-400 font-mono">Código: ${e.codigo}</p>
+            </div>
+          </div>
+          <button onclick="excluirEmpresa('${e.codigo}')" class="text-red-400 hover:text-red-300 p-1 text-xs">🗑️</button>
+        </div>
       `).join('');
     }
 
@@ -265,7 +401,6 @@
       renderProcessos();
     }
 
-    // Exibe o logo e o nome da empresa selecionada (ou a primeira da planilha)
     function atualizarIdentidadeVisual() {
       const codSelecionado = document.getElementById("empresaFilter").value;
       let emp = null;
@@ -273,24 +408,23 @@
       if (codSelecionado) {
         emp = empresasData.find(e => String(e.codigo).trim() === String(codSelecionado).trim());
       } else if (empresasData.length > 0) {
-        emp = empresasData[0]; // Padrão: primeira empresa cadastrada
+        emp = empresasData[0];
       }
 
-      const headerLogo = document.getElementById("headerLogo");
-      const headerNome = document.getElementById("headerEmpresaNome");
+      const sideLogo = document.getElementById("sideHeaderLogo");
+      const sideNome = document.getElementById("sideHeaderEmpresa");
 
       if (emp && emp.logo) {
-        headerLogo.src = emp.logo;
-        headerLogo.classList.remove("hidden");
+        sideLogo.src = emp.logo;
+        sideLogo.classList.remove("hidden");
       } else {
-        headerLogo.classList.add("hidden");
+        sideLogo.classList.add("hidden");
       }
 
       if (emp && emp.nome) {
-        headerNome.innerText = emp.nome;
-        headerNome.classList.remove("hidden");
+        sideNome.innerText = emp.nome;
       } else {
-        headerNome.classList.add("hidden");
+        sideNome.innerText = "Monitoramento";
       }
     }
 
@@ -298,6 +432,48 @@
       if (!cod) return "";
       const emp = empresasData.find(e => String(e.codigo).trim() === String(cod).trim());
       return emp ? (emp.nome || emp.codigo) : cod;
+    }
+
+    async function salvarEmpresa(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btnSalvarEmp");
+      btn.innerText = "Salvando...";
+      btn.disabled = true;
+
+      const payload = {
+        codigo: document.getElementById("campoEmpCodigo").value.trim(),
+        nome: document.getElementById("campoEmpNome").value.trim(),
+        logo: document.getElementById("campoEmpLogo").value.trim()
+      };
+
+      try {
+        const res = await apiRequest("add_empresa", payload, "POST");
+        if (res.success) {
+          document.getElementById("empresaForm").reset();
+          await carregarProcessos();
+        } else {
+          alert("Erro: " + res.error);
+        }
+      } catch (err) {
+        alert("Erro ao salvar empresa.");
+      } finally {
+        btn.innerText = "Adicionar Empresa";
+        btn.disabled = false;
+      }
+    }
+
+    async function excluirEmpresa(cod) {
+      if (!confirm(`Deseja realmente excluir a empresa ${cod}?`)) return;
+      try {
+        const res = await apiRequest("delete_empresa", { codigo: cod }, "POST");
+        if (res.success) {
+          await carregarProcessos();
+        } else {
+          alert("Erro ao excluir: " + res.error);
+        }
+      } catch (err) {
+        alert("Erro na requisição.");
+      }
     }
 
     function calcularDiasDesde(dataStr) {
@@ -403,7 +579,6 @@
         return;
       }
 
-      // Agrupamento por Tipo
       const grupos = {};
       filtrados.forEach(p => {
         const tipo = (p.tipo && p.tipo.trim()) ? p.tipo.trim() : "Cível";
@@ -545,9 +720,9 @@
     }
 
     async function sincronizarDataJud() {
-      const btn = document.getElementById("btnSync");
-      const icon = document.getElementById("syncIcon");
-      const txt = document.getElementById("syncText");
+      const btn = document.getElementById("btnSideSync");
+      const icon = document.getElementById("sideSyncIcon");
+      const txt = document.getElementById("sideSyncText");
 
       btn.disabled = true;
       btn.classList.add("opacity-60", "cursor-not-allowed");
@@ -738,6 +913,14 @@
 
     function closeProcessModal() {
       document.getElementById("processModal").classList.add("hidden");
+    }
+
+    function openEmpresaModal() {
+      document.getElementById("empresaModal").classList.remove("hidden");
+    }
+
+    function closeEmpresaModal() {
+      document.getElementById("empresaModal").classList.add("hidden");
     }
 
     function closeMovModal() {
