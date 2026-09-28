@@ -1,193 +1,338 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- PWA & Mobile Meta Tags -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2563eb">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Processos">
-<link rel="apple-touch-icon" href="icon-192.png">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Acompanhamento de Processos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Controle de Processos</title>
+  <meta name="theme-color" content="#1e293b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-800 p-4 md:p-8">
-  <div class="max-w-2xl mx-auto space-y-6">
-    <header class="flex justify-between items-center">
-      <h1 class="text-2xl font-bold">Meus Processos</h1>
-      <button onclick="carregarTodos()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700">Atualizar Todos</button>
-    </header>
+<body class="bg-slate-100 text-slate-800 font-sans pb-20 sm:pb-8">
 
-    <!-- Formulário de Cadastro -->
-    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-      <h2 class="text-sm font-semibold uppercase text-gray-500 mb-3">Novo Processo</h2>
-      <form id="form-cadastro" class="flex flex-col sm:flex-row gap-2">
-        <input id="input-cnj" type="text" placeholder="0000000-00.0000.8.06.0001" required 
-               class="flex-1 p-2 border rounded border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-        <input id="input-nome" type="text" placeholder="Identificador / Apelido" 
-               class="p-2 border rounded border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-green-700">Adicionar</button>
-      </form>
+  <!-- Header -->
+  <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div>
+        <h1 class="font-bold text-lg leading-tight">Meus Processos</h1>
+        <p class="text-xs text-slate-400">Monitoramento Judicial</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="openConfigModal()" title="Configurações" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">
+          ⚙️
+        </button>
+        <button onclick="openProcessModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 shadow">
+          <span>+</span> Novo
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Filtro e Busca -->
+  <main class="max-w-4xl mx-auto px-4 py-4 space-y-4">
+    <div class="flex gap-2">
+      <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por número, apelido ou tribunal..." 
+        class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+      <button onclick="carregarProcessos()" title="Atualizar" class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm hover:bg-slate-50 shadow-sm">
+        🔄
+      </button>
     </div>
 
     <!-- Lista de Processos -->
-    <div id="lista-processos" class="space-y-4"></div>
+    <div id="processosContainer" class="space-y-3">
+      <div class="text-center py-10 text-slate-500 text-sm">Carregando dados...</div>
+    </div>
+  </main>
+
+  <!-- Modal: Adicionar/Editar Processo -->
+  <div id="processModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-xl max-h-[90vh] overflow-y-auto">
+      <h3 id="modalTitle" class="text-base font-bold text-slate-900 mb-3">Novo Processo</h3>
+      <form id="processForm" onsubmit="salvarProcesso(event)" class="space-y-3">
+        <input type="hidden" id="formMode" value="add">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Número do Processo (CNJ)*</label>
+          <input type="text" id="campoProcesso" required placeholder="0000000-00.0000.0.00.0000"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Apelido/Identificador</label>
+            <input type="text" id="campoApelido" placeholder="Ex: Causa Cível"
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Tribunal</label>
+            <input type="text" id="campoTribunal" placeholder="TJCE, TRF5, etc."
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">E-mail de Notificação</label>
+            <input type="email" id="campoEmail" placeholder="seu@email.com"
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Status</label>
+            <select id="campoStatus" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="Ativo">Ativo</option>
+              <option value="Arquivado">Arquivado</option>
+              <option value="Suspenso">Suspenso</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3">
+          <button type="button" onclick="closeProcessModal()" class="px-4 py-2 border rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+          <button type="submit" id="btnSubmitForm" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium shadow">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Movimentações -->
+  <div id="movModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-xl rounded-t-2xl sm:rounded-2xl p-5 shadow-xl max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b">
+        <div>
+          <h3 class="text-base font-bold text-slate-900" id="movProcessoTitulo">Movimentações</h3>
+          <p class="text-xs text-slate-500" id="movProcessoSubtitulo"></p>
+        </div>
+        <button onclick="closeMovModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold p-1">✕</button>
+      </div>
+      <div id="movimentacoesLista" class="overflow-y-auto py-3 space-y-3 flex-1">
+        <p class="text-center text-xs text-slate-400 py-6">Carregando movimentações...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Configuração da API -->
+  <div id="configModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl p-5 shadow-xl">
+      <h3 class="text-base font-bold text-slate-900 mb-2">Configurar Web App URL</h3>
+      <p class="text-xs text-slate-500 mb-3">Cole a URL de implantação da sua API do Google Apps Script:</p>
+      <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec"
+        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none mb-4">
+      <div class="flex justify-end gap-2">
+        <button onclick="closeConfigModal()" class="px-4 py-2 border rounded-lg text-sm font-medium text-slate-600">Fechar</button>
+        <button onclick="salvarApiUrl()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">Salvar</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    const API_KEY = "cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENxbUpBuzzrR0FJTQ==";
-    const TRIBUNAIS_ESTADUAIS = {
-      "01":"tjac","02":"tjal","03":"tjap","04":"tjam","05":"tjba","06":"tjce","07":"tjdft","08":"tjes","09":"tjgo",
-      "10":"tjma","11":"tjmt","12":"tjms","13":"tjmg","14":"tjpa","15":"tjpb","16":"tjpr","17":"tjpe","18":"tjpi",
-      "19":"tjrj","20":"tjrn","21":"tjrs","22":"tjro","23":"tjrr","24":"tjsc","25":"tjse","26":"tjsp","27":"tjto"
-    };
+    const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbx20HclldVX0ee7_6CEaVl7qkHonkFbgAC_K-REepBnmetFKNbcracWpPhw9CxV3LcD/exec"; // Cole sua URL aqui ou configure pelo app
+    let API_URL = localStorage.getItem("PROCESSOS_API_URL") || DEFAULT_API_URL;
+    let processosData = [];
 
-    function identificarTribunal(cnj) {
-      const c = cnj.replace(/\D/g, "");
-      if (c.length !== 20) return null;
-      const j = c.charAt(13);
-      const tr = c.substring(14, 16);
-      if (j === "8") return TRIBUNAIS_ESTADUAIS[tr] || null;
-      if (j === "4") return `trf${parseInt(tr, 10)}`;
-      if (j === "5") return `trt${parseInt(tr, 10)}`;
-      if (j === "3") return "stj";
-      if (j === "1") return "stf";
-      return null;
+    window.addEventListener("DOMContentLoaded", () => {
+      if (!API_URL || API_URL === "SUA_URL_DO_WEBAPP_AQUI") {
+        openConfigModal();
+      } else {
+        carregarProcessos();
+      }
+    });
+
+    // Requisições para o Web App
+    async function apiRequest(action, data = null, method = "GET") {
+      const url = method === "GET" 
+        ? `${API_URL}?action=${encodeURIComponent(action)}${data ? '&' + new URLSearchParams(data).toString() : ''}`
+        : API_URL;
+
+      const opts = { method, redirect: "follow" };
+      if (method === "POST") {
+        opts.headers = { "Content-Type": "text/plain;charset=utf-8" };
+        opts.body = JSON.stringify({ action, ...data });
+      }
+
+      const res = await fetch(url, opts);
+      return await res.json();
     }
 
-    function obterProcessos() {
-      return JSON.parse(localStorage.getItem("processos_salvos") || "[]");
+    async function carregarProcessos() {
+      const container = document.getElementById("processosContainer");
+      container.innerHTML = `<div class="text-center py-10 text-slate-500 text-sm">Carregando processos...</div>`;
+      try {
+        const res = await apiRequest("list");
+        if (res.success) {
+          processosData = res.data;
+          renderProcessos();
+        } else {
+          container.innerHTML = `<div class="text-center text-red-500 text-sm py-4">Erro ao carregar processos: ${res.error}</div>`;
+        }
+      } catch (err) {
+        container.innerHTML = `<div class="text-center text-red-500 text-sm py-4">Falha na conexão com a API. Verifique a URL nas configurações.</div>`;
+      }
     }
 
-    function salvarProcessos(lista) {
-      localStorage.setItem("processos_salvos", JSON.stringify(lista));
-    }
+    function renderProcessos() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      const container = document.getElementById("processosContainer");
+      const filtrados = processosData.filter(p => 
+        (p.processo || '').toLowerCase().includes(query) ||
+        (p.apelido || '').toLowerCase().includes(query) ||
+        (p.tribunal || '').toLowerCase().includes(query)
+      );
 
-    async function consultarDataJud(numeroLimpo, tribunal) {
-      const urlDestino = `https://api-publica.datajud.cnj.jus.br/api_publica_${tribunal}/_search`;
-      // Proxy para contornar o bloqueio de CORS do navegador
-      const url = `https://corsproxy.io/?url=${encodeURIComponent(urlDestino)}`;
-
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { 
-          "Authorization": `APIKey ${API_KEY}`, 
-          "Content-Type": "application/json" 
-        },
-        body: JSON.stringify({ query: { match: { numeroProcesso: numeroLimpo } } })
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      return data.hits?.hits?.[0]?._source || null;
-    }
-
-    function formatarData(iso) {
-      if (!iso) return "-";
-      const d = new Date(iso);
-      return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-    }
-
-    async function renderizarCard(item, index) {
-      const limpo = item.cnj.replace(/\D/g, "");
-      const tribunal = identificarTribunal(limpo);
-      
-      const div = document.createElement("div");
-      div.className = "bg-white p-4 rounded-lg shadow-sm border border-gray-200";
-      div.innerHTML = `
-        <div class="flex justify-between items-start mb-2">
-          <div>
-            <div class="text-xs font-semibold text-blue-600 uppercase">${tribunal ? tribunal.toUpperCase() : "N/D"}</div>
-            <h3 class="font-bold text-gray-900">${item.nome || item.cnj}</h3>
-            <p class="text-xs text-gray-500">${item.cnj}</p>
-          </div>
-          <button onclick="removerProcesso(${index})" class="text-red-500 text-xs hover:underline">Excluir</button>
-        </div>
-        <div id="andamentos-${index}" class="mt-3 text-xs text-gray-400">Consultando últimos andamentos...</div>
-      `;
-      document.getElementById("lista-processos").appendChild(div);
-
-      if (!tribunal) {
-        document.getElementById(`andamentos-${index}`).innerHTML = "<span class='text-red-500'>CNJ inválido</span>";
+      if (filtrados.length === 0) {
+        container.innerHTML = `<div class="bg-white p-6 rounded-xl border border-slate-200 text-center text-slate-400 text-sm">Nenhum processo encontrado.</div>`;
         return;
       }
+
+      container.innerHTML = filtrados.map(p => `
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div>
+              <span class="inline-block px-2 py-0.5 text-xs font-semibold rounded ${
+                p.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+              }">${p.status || 'Ativo'}</span>
+              ${p.tribunal ? `<span class="inline-block px-2 py-0.5 text-xs font-semibold rounded bg-blue-100 text-blue-700 ml-1">${p.tribunal}</span>` : ''}
+              <h2 class="text-sm font-bold text-slate-900 mt-1">${p.apelido || 'Sem apelido'}</h2>
+              <p class="text-xs text-slate-500 font-mono select-all">${p.processo}</p>
+            </div>
+            <div class="flex items-center gap-1">
+              <button onclick='abrirEditar(${JSON.stringify(p)})' class="p-1.5 text-slate-500 hover:text-blue-600 rounded-md hover:bg-slate-100 text-xs">✏️</button>
+              <button onclick='excluirProcesso("${p.processo}")' class="p-1.5 text-slate-500 hover:text-red-600 rounded-md hover:bg-slate-100 text-xs">🗑️</button>
+            </div>
+          </div>
+
+          <div class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 my-2">
+            <p class="font-medium text-slate-800 line-clamp-2">${p.ultimoAndamento || 'Nenhuma movimentação registrada.'}</p>
+            <p class="text-[10px] text-slate-400 mt-1">Última data: ${p.ultimaData ? new Date(p.ultimaData).toLocaleDateString('pt-BR') : '-'}</p>
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[11px] text-slate-400 truncate max-w-[180px]">${p.email || 'Sem e-mail'}</span>
+            <button onclick='verMovimentacoes("${p.processo}", "${p.apelido || p.processo}")' class="text-xs font-semibold text-blue-600 hover:text-blue-800">
+              Ver Histórico →
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Ações de Salvar / Excluir
+    async function salvarProcesso(e) {
+      e.preventDefault();
+      const mode = document.getElementById("formMode").value;
+      const btn = document.getElementById("btnSubmitForm");
+      btn.innerText = "Salvando...";
+      btn.disabled = true;
+
+      const payload = {
+        processo: document.getElementById("campoProcesso").value.trim(),
+        apelido: document.getElementById("campoApelido").value.trim(),
+        tribunal: document.getElementById("campoTribunal").value.trim(),
+        email: document.getElementById("campoEmail").value.trim(),
+        status: document.getElementById("campoStatus").value
+      };
 
       try {
-        const dados = await consultarDataJud(limpo, tribunal);
-        const container = document.getElementById(`andamentos-${index}`);
-        if (!dados || !dados.movimentos) {
-          container.innerHTML = "<span class='text-gray-400'>Nenhum dado encontrado no DataJud.</span>";
-          return;
+        const res = await apiRequest(mode, payload, "POST");
+        if (res.success) {
+          closeProcessModal();
+          await carregarProcessos();
+        } else {
+          alert("Erro: " + res.error);
         }
-
-        const movimentos = dados.movimentos
-          .sort((a, b) => (b.dataHora || "").localeCompare(a.dataHora || ""))
-          .slice(0, 3); // Extrai as últimas 3 movimentações
-
-        container.innerHTML = `
-          <div class="border-t pt-2 space-y-2">
-            <span class="font-semibold text-gray-600">Últimas 3 Movimentações:</span>
-            ${movimentos.map((m, i) => `
-              <div class="p-2 rounded bg-gray-50 border border-gray-100">
-                <div class="text-[11px] text-gray-500">${formatarData(m.dataHora)}</div>
-                <div class="font-medium text-gray-800">${m.nome || "Movimentação sem descrição"}</div>
-                ${m.complementosTabelados?.length ? `<div class="text-gray-500 text-[11px]">${m.complementosTabelados.map(c => c.descricao).join(" | ")}</div>` : ""}
-              </div>
-            `).join("")}
-          </div>
-        `;
       } catch (err) {
-        document.getElementById(`andamentos-${index}`).innerHTML = `<span class="text-red-500">Erro na consulta: ${err.message}</span>`;
+        alert("Erro ao salvar processo.");
+      } finally {
+        btn.innerText = "Salvar";
+        btn.disabled = false;
       }
     }
 
-    async function carregarTodos() {
-      const lista = obterProcessos();
-      const container = document.getElementById("lista-processos");
-      container.innerHTML = "";
-      if (lista.length === 0) {
-        container.innerHTML = "<p class='text-center text-sm text-gray-500 py-6'>Nenhum processo cadastrado.</p>";
-        return;
-      }
-      for (let i = 0; i < lista.length; i++) {
-        await renderizarCard(lista[i], i);
+    async function excluirProcesso(numProcesso) {
+      if (!confirm(`Deseja realmente remover o processo ${numProcesso}?`)) return;
+      try {
+        const res = await apiRequest("delete", { processo: numProcesso }, "POST");
+        if (res.success) {
+          await carregarProcessos();
+        } else {
+          alert("Erro ao excluir: " + res.error);
+        }
+      } catch (err) {
+        alert("Erro na requisição.");
       }
     }
 
-    function removerProcesso(index) {
-      if (!confirm("Deseja remover este processo?")) return;
-      const lista = obterProcessos();
-      lista.splice(index, 1);
-      salvarProcessos(lista);
-      carregarTodos();
+    // Modal de Histórico de Movimentações
+    async function verMovimentacoes(numProcesso, titulo) {
+      document.getElementById("movProcessoTitulo").innerText = titulo;
+      document.getElementById("movProcessoSubtitulo").innerText = numProcesso;
+      const lista = document.getElementById("movimentacoesLista");
+      lista.innerHTML = `<p class="text-center text-xs text-slate-400 py-6">Carregando...</p>`;
+      document.getElementById("movModal").classList.remove("hidden");
+
+      try {
+        const res = await apiRequest("movimentacoes", { processo: numProcesso });
+        if (res.success && res.data.length > 0) {
+          lista.innerHTML = res.data.map(m => `
+            <div class="border-l-2 border-blue-500 pl-3 py-1 space-y-1">
+              <span class="text-[10px] font-semibold text-slate-400 block">${m.dataMovimentacao ? new Date(m.dataMovimentacao).toLocaleDateString('pt-BR') : '-'}</span>
+              <p class="text-xs text-slate-800 leading-snug">${m.atualizacao}</p>
+            </div>
+          `).join('');
+        } else {
+          lista.innerHTML = `<p class="text-center text-xs text-slate-400 py-6">Nenhuma movimentação registrada na planilha.</p>`;
+        }
+      } catch (err) {
+        lista.innerHTML = `<p class="text-center text-xs text-red-500 py-6">Erro ao buscar movimentações.</p>`;
+      }
     }
 
-    document.getElementById("form-cadastro").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const cnj = document.getElementById("input-cnj").value.trim();
-      const nome = document.getElementById("input-nome").value.trim();
-      const lista = obterProcessos();
+    // Controles de Modais
+    function openProcessModal() {
+      document.getElementById("processForm").reset();
+      document.getElementById("formMode").value = "add";
+      document.getElementById("modalTitle").innerText = "Novo Processo";
+      document.getElementById("campoProcesso").readOnly = false;
+      document.getElementById("processModal").classList.remove("hidden");
+    }
 
-      lista.push({ cnj, nome });
-      salvarProcessos(lista);
+    function abrirEditar(p) {
+      document.getElementById("formMode").value = "edit";
+      document.getElementById("modalTitle").innerText = "Editar Processo";
+      document.getElementById("campoProcesso").value = p.processo;
+      document.getElementById("campoProcesso").readOnly = true;
+      document.getElementById("campoApelido").value = p.apelido || "";
+      document.getElementById("campoTribunal").value = p.tribunal || "";
+      document.getElementById("campoEmail").value = p.email || "";
+      document.getElementById("campoStatus").value = p.status || "Ativo";
+      document.getElementById("processModal").classList.remove("hidden");
+    }
 
-      document.getElementById("input-cnj").value = "";
-      document.getElementById("input-nome").value = "";
-      carregarTodos();
-    });
+    function closeProcessModal() {
+      document.getElementById("processModal").classList.add("hidden");
+    }
 
-    carregarTodos();
+    function closeMovModal() {
+      document.getElementById("movModal").classList.add("hidden");
+    }
+
+    function openConfigModal() {
+      document.getElementById("apiUrlInput").value = API_URL === "SUA_URL_DO_WEBAPP_AQUI" ? "" : API_URL;
+      document.getElementById("configModal").classList.remove("hidden");
+    }
+
+    function closeConfigModal() {
+      document.getElementById("configModal").classList.add("hidden");
+    }
+
+    function salvarApiUrl() {
+      const val = document.getElementById("apiUrlInput").value.trim();
+      if (!val) return;
+      API_URL = val;
+      localStorage.setItem("PROCESSOS_API_URL", val);
+      closeConfigModal();
+      carregarProcessos();
+    }
   </script>
-  <script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js")
-        .then(() => console.log("Service Worker ativo"))
-        .catch((err) => console.error("Falha ao registrar Service Worker:", err));
-    });
-  }
-</script>
 </body>
 </html>
