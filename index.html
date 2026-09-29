@@ -7,6 +7,12 @@
   <meta name="theme-color" content="#090d16" id="metaThemeColor">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.json">
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(err => console.log("SW error", err));
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   
   <!-- Bibliotecas de Exportação (Excel e PDF) -->
@@ -16,12 +22,6 @@
 
   <script>
     tailwind.config = { darkMode: 'class' };
-    const temaSalvo = localStorage.getItem("APP_THEME") || "dark";
-    if (temaSalvo === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
   </script>
   <style>
     summary::-webkit-details-marker { display: none; }
@@ -71,7 +71,7 @@
       </nav>
     </div>
 
-    <!-- Sincronização Geral (Em Segundo Plano) -->
+    <!-- Sincronização Geral -->
     <div class="p-3 border-t border-slate-200 dark:border-slate-800">
       <button id="btnSideSync" onclick="sincronizarDataJud()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow transition">
         <span id="sideSyncIcon">⚡</span>
@@ -107,7 +107,8 @@
     </header>
 
     <main class="max-w-5xl w-full mx-auto px-4 py-4 space-y-4 flex-1">
-	<!-- Cartões de Resumo / Contadores -->
+      
+      <!-- Cartões de Resumo / Contadores -->
       <div class="grid grid-cols-3 gap-2 sm:gap-3">
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-sm flex items-center justify-between">
           <div>
@@ -133,6 +134,7 @@
           <span class="text-xl sm:text-2xl">🔴</span>
         </div>
       </div>
+
       <!-- Filtros e Exportação -->
       <div class="flex flex-col sm:flex-row gap-2">
         <select id="empresaFilter" onchange="aoFiltrarEmpresa()" 
@@ -320,12 +322,12 @@
     </div>
   </div>
 
-  <!-- MODAL: Configurações & Tema -->
+  <!-- MODAL: Configurações & Tema (Vinculado à Planilha) -->
   <div id="configModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4">
       <div>
-        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">Configurações do Aplicativo</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Ajuste a aparência e a conexão com a planilha.</p>
+        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">Configurações da Planilha</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Salvo centralizadamente na aba Configurações.</p>
       </div>
 
       <div>
@@ -350,7 +352,7 @@
 
       <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
         <button onclick="closeConfigModal()" class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Fechar</button>
-        <button onclick="salvarConfiguracoes()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium">Salvar</button>
+        <button onclick="salvarConfiguracoesNaPlanilha()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium">Salvar na Planilha</button>
       </div>
     </div>
   </div>
@@ -358,21 +360,37 @@
   <script>
     const DEFAULT_API_URL = "SUA_URL_DO_WEBAPP_AQUI";
     let API_URL = localStorage.getItem("PROCESSOS_API_URL") || DEFAULT_API_URL;
+    let CONFIG_GLOBAL = { app_theme: "dark", api_url: "" };
     let processosData = [];
     let empresasData = [];
     let logoTempBase64 = "";
 
-    window.addEventListener("DOMContentLoaded", () => {
-      atualizarBotoesTema();
+    window.addEventListener("DOMContentLoaded", async () => {
+      await carregarConfiguracoesDaPlanilha();
+    });
+
+    async function carregarConfiguracoesDaPlanilha() {
+      try {
+        const res = await apiRequest("get_config");
+        if (res.success && res.config) {
+          CONFIG_GLOBAL = res.config;
+          if (CONFIG_GLOBAL.api_url) {
+            API_URL = CONFIG_GLOBAL.api_url;
+          }
+          aplicarTema(CONFIG_GLOBAL.app_theme || "dark");
+        }
+      } catch (e) {
+        console.error("Erro ao carregar configurações da planilha", e);
+      }
+
       if (!API_URL || API_URL === "SUA_URL_DO_WEBAPP_AQUI") {
         openConfigModal();
       } else {
         carregarProcessos();
       }
-    });
+    }
 
-    function alterarTema(tema) {
-      localStorage.setItem("APP_THEME", tema);
+    function aplicarTema(tema) {
       const meta = document.getElementById("metaThemeColor");
       if (tema === "dark") {
         document.documentElement.classList.add("dark");
@@ -381,11 +399,10 @@
         document.documentElement.classList.remove("dark");
         if (meta) meta.setAttribute("content", "#f8fafc");
       }
-      atualizarBotoesTema();
+      atualizarBotoesTema(tema);
     }
 
-    function atualizarBotoesTema() {
-      const temaAtual = localStorage.getItem("APP_THEME") || "dark";
+    function atualizarBotoesTema(temaAtual) {
       const btnDark = document.getElementById("btnTemaDark");
       const btnLight = document.getElementById("btnTemaLight");
       if (!btnDark || !btnLight) return;
@@ -396,6 +413,33 @@
       } else {
         btnLight.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-blue-600 bg-blue-50 text-blue-600 text-xs font-semibold";
         btnDark.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800";
+      }
+    }
+
+    async function alterarTema(tema) {
+      CONFIG_GLOBAL.app_theme = tema;
+      aplicarTema(tema);
+      await salvarConfiguracoesNaPlanilha();
+    }
+
+    async function salvarConfiguracoesNaPlanilha() {
+      const apiUrlVal = document.getElementById("apiUrlInput").value.trim();
+      if (apiUrlVal) {
+        CONFIG_GLOBAL.api_url = apiUrlVal;
+        API_URL = apiUrlVal;
+        localStorage.setItem("PROCESSOS_API_URL", apiUrlVal);
+      }
+
+      try {
+        const res = await apiRequest("save_config", { config: CONFIG_GLOBAL }, "POST");
+        if (res.success) {
+          closeConfigModal();
+          carregarProcessos();
+        } else {
+          alert("Erro ao salvar: " + res.error);
+        }
+      } catch (err) {
+        alert("Falha na conexão ao salvar configurações.");
       }
     }
 
@@ -693,12 +737,6 @@
       return `Há ${diffDias} dias`;
     }
 
-    function copiarProcesso(texto) {
-      navigator.clipboard.writeText(texto.trim()).then(() => {
-        alert("Número copiado para a área de transferência!");
-      });
-    }
-
     function obterLinksTribunal(numProcesso, tribunal) {
       const d = String(numProcesso).replace(/\D/g, "");
       const trib = String(tribunal || "").toUpperCase().trim();
@@ -712,21 +750,15 @@
         const cnjFormatado = `${numDigAno}.${j}.${tr}.${foro}`;
 
         if (trib === "TJCE") {
-          // Se for Juizado Especial / Comarca Digital (ex: 6001), prioriza o PJe do TJCE
           if (foro.startsWith("6") || foro === "6001") {
             links.push({
               nome: "PJe TJCE (Juizados / Digital)",
               url: "https://pje.tjce.jus.br/pje/ConsultaPublica/listView.seam"
             });
           }
-
           links.push({
             nome: "e-SAJ TJCE (1º Grau)",
             url: `https://esaj.tjce.jus.br/cpopg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&numeroDigitoAnoUnificado=${encodeURIComponent(numDigAno)}&foroNumeroUnificado=${encodeURIComponent(foro)}&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(cnjFormatado)}`
-          });
-          links.push({
-            nome: "e-SAJ TJCE (2º Grau)",
-            url: `https://esaj.tjce.jus.br/cposg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&numeroDigitoAnoUnificado=${encodeURIComponent(numDigAno)}&foroNumeroUnificado=${encodeURIComponent(foro)}&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(cnjFormatado)}`
           });
         } else if (trib === "TJSP") {
           links.push({
@@ -860,18 +892,13 @@
       const filtrados = obterProcessosFiltrados();
       const container = document.getElementById("processosContainer");
 
-      // CÁLCULO DOS CONTADORES PARA OS CARTÕES DO TOPO
-      let ativos = 0;
-      let suspensos = 0;
-      let arquivados = 0;
-
+      let ativos = 0, suspensos = 0, arquivados = 0;
       filtrados.forEach(p => {
         const st = (p.status || "Ativo").trim().toLowerCase();
         if (st.includes("arquiv")) arquivados++;
         else if (st.includes("susp")) suspensos++;
         else ativos++;
       });
-
       document.getElementById("countAtivos").innerText = ativos;
       document.getElementById("countSuspensos").innerText = suspensos;
       document.getElementById("countArquivados").innerText = arquivados;
@@ -935,11 +962,7 @@
 
           return `
           <details ontoggle="aoAbrirProcesso(this, '${cleanId}', '${p.processo}')" class="group/item bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl overflow-hidden transition shadow-sm mb-2.5">
-            
-            <!-- RESUMO DO CARD (Layout de 2 Linhas) -->
             <summary class="cursor-pointer select-none p-3.5 sm:p-4 bg-white dark:bg-slate-950 group-hover/item:bg-slate-50 dark:group-hover/item:bg-slate-900/50">
-              
-              <!-- LINHA 1: Apelido, Empresa, Vara e Status -->
               <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
                 <div class="flex items-center gap-2 flex-wrap min-w-0">
                   <span class="text-sm font-bold text-slate-900 dark:text-slate-100">${p.apelido || 'Sem apelido'}</span>
@@ -957,7 +980,6 @@
                 </div>
               </div>
 
-              <!-- LINHA 2: Processo e Data da Última Movimentação -->
               <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-2 flex-wrap pt-0.5">
                 <div class="flex items-center gap-2">
                   <span class="font-mono text-slate-700 dark:text-slate-300 select-all font-medium">${p.processo}</span>
@@ -972,10 +994,7 @@
               </div>
             </summary>
 
-            <!-- CONTEÚDO EXPANDIDO (Histórico completo + Ações) -->
             <div class="px-4 pb-4 pt-3 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40 space-y-3">
-              
-              <!-- Barra de Ações Rápidas -->
               <div class="flex items-center justify-between flex-wrap gap-2 pt-1 pb-2 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <button id="btn-sync-${cleanId}" onclick='event.stopPropagation(); sincronizarProcessoIndividual("${p.processo}", "${p.tribunal || ""}")' 
@@ -984,8 +1003,7 @@
                   </button>
 
                   <button id="btn-email-${cleanId}" onclick='event.stopPropagation(); enviarEmailProcesso("${p.processo}")' 
-                    class="px-2.5 py-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 border border-blue-300 dark:border-blue-800/80 rounded-md text-xs font-semibold transition flex items-center gap-1"
-                    title="Enviar resumo e histórico por e-mail">
+                    class="px-2.5 py-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 border border-blue-300 dark:border-blue-800/80 rounded-md text-xs font-semibold transition flex items-center gap-1">
                     <span>✉️</span> <span>Enviar E-mail</span>
                   </button>
 
@@ -1008,7 +1026,6 @@
                 </div>
               </div>
 
-              <!-- Informações das Partes e E-mails -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg shadow-sm">
                 <div>
                   <span class="text-slate-500 font-semibold">👤 Reclamante:</span> 
@@ -1024,7 +1041,6 @@
                 </div>
               </div>
 
-              <!-- Histórico de Movimentações Inline -->
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
@@ -1038,7 +1054,6 @@
                   <div class="text-center py-4 text-xs text-slate-400">Clique para carregar histórico...</div>
                 </div>
               </div>
-
             </div>
           </details>
           `;
@@ -1176,7 +1191,6 @@
       }
     }
 
-    // Sincronização em Segundo Plano (Assíncrona - Não bloqueia a tela)
     async function sincronizarDataJud() {
       if (!processosData || processosData.length === 0) {
         alert("Nenhum processo carregado na lista para atualizar.");
@@ -1351,22 +1365,12 @@
 
     function openConfigModal() {
       document.getElementById("apiUrlInput").value = API_URL === "SUA_URL_DO_WEBAPP_AQUI" ? "" : API_URL;
-      atualizarBotoesTema();
+      aplicarTema(CONFIG_GLOBAL.app_theme || "dark");
       document.getElementById("configModal").classList.remove("hidden");
     }
 
     function closeConfigModal() {
       document.getElementById("configModal").classList.add("hidden");
-    }
-
-    function salvarConfiguracoes() {
-      const val = document.getElementById("apiUrlInput").value.trim();
-      if (val) {
-        API_URL = val;
-        localStorage.setItem("PROCESSOS_API_URL", val);
-      }
-      closeConfigModal();
-      carregarProcessos();
     }
   </script>
 </body>
