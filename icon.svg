@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#090d16"/>
+  <path d="M256 64L384 128V256C384 350 332 430 256 448C180 430 128 350 128 256V128L256 64Z" fill="#1e293b" stroke="#3b82f6" stroke-width="12"/>
+  <path d="M256 96L352 144V256C352 332 304 400 256 416C208 400 160 332 160 256V144L256 96Z" fill="#0f172a" stroke="#60a5fa" stroke-width="8"/>
+  <text x="256" y="275" font-family="Arial, sans-serif" font-weight="bold" font-size="95" fill="#ffffff" text-anchor="middle">IAZ</text>
+  <circle cx="256" cy="340" r="12" fill="#f59e0b"/>
+</svg>
