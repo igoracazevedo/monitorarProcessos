@@ -71,10 +71,11 @@
       </nav>
     </div>
 
+    <!-- Sincronização Geral (Em Segundo Plano) -->
     <div class="p-3 border-t border-slate-200 dark:border-slate-800">
       <button id="btnSideSync" onclick="sincronizarDataJud()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow transition">
         <span id="sideSyncIcon">⚡</span>
-        <span id="sideSyncText">Checar DataJud</span>
+        <span id="sideSyncText">Checar DataJud (Todos)</span>
       </button>
     </div>
   </aside>
@@ -106,7 +107,7 @@
     </header>
 
     <main class="max-w-5xl w-full mx-auto px-4 py-4 space-y-4 flex-1">
-      <!-- Filtros e Botões de Exportação -->
+      <!-- Filtros e Exportação -->
       <div class="flex flex-col sm:flex-row gap-2">
         <select id="empresaFilter" onchange="aoFiltrarEmpresa()" 
           class="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm sm:w-52 font-medium">
@@ -114,14 +115,13 @@
         </select>
 
         <div class="flex gap-2 flex-1">
-          <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por número, tipo, apelido, partes ou vara..." 
+          <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por apelido, processo, vara, partes ou e-mail..." 
             class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-lg text-xs sm:text-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
           
           <button onclick="carregarProcessos()" title="Atualizar Lista" class="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-800 shadow-sm text-slate-600 dark:text-slate-300">
             🔄
           </button>
 
-          <!-- Botões de Exportação -->
           <button onclick="exportarExcel()" title="Exportar para Excel (.xlsx)" 
             class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm transition">
             <span>📊</span> <span class="hidden sm:inline">Excel</span>
@@ -291,29 +291,6 @@
           <button type="submit" id="btnSubmitForm" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium shadow">Salvar</button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- MODAL: Histórico de Movimentações -->
-  <div id="movModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[85vh] flex flex-col">
-      <div class="flex items-start justify-between pb-3 border-b border-slate-200 dark:border-slate-800 gap-2">
-        <div class="flex-1">
-          <h3 class="text-base font-bold text-slate-900 dark:text-slate-100" id="movProcessoTitulo">Movimentações</h3>
-          <div class="flex items-center gap-2 mt-1">
-            <span class="text-xs text-slate-500 dark:text-slate-400 font-mono" id="movProcessoSubtitulo"></span>
-            <button onclick="copiarProcesso(document.getElementById('movProcessoSubtitulo').innerText)" 
-              class="text-[11px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 transition">
-              📋 Copiar
-            </button>
-          </div>
-          <div id="movLinkTribunalContainer" class="mt-2.5 flex items-center gap-2 flex-wrap"></div>
-        </div>
-        <button onclick="closeMovModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1">✕</button>
-      </div>
-      <div id="movimentacoesLista" class="overflow-y-auto py-3 space-y-3 flex-1 pr-1">
-        <p class="text-center text-xs text-slate-500 py-6">Carregando movimentações...</p>
-      </div>
     </div>
   </div>
 
@@ -659,6 +636,20 @@
       }
     }
 
+    function formatarDataHora(dataStr) {
+      if (!dataStr) return 'Sem registro';
+      const d = new Date(dataStr);
+      if (isNaN(d.getTime())) return String(dataStr);
+      
+      const dia = String(d.getDate()).padStart(2, '0');
+      const mes = String(d.getMonth() + 1).padStart(2, '0');
+      const ano = d.getFullYear();
+      const hora = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      
+      return `${dia}/${mes}/${ano} às ${hora}:${min}`;
+    }
+
     function calcularDiasDesde(dataStr) {
       if (!dataStr) return "Sem data";
       const dataMov = new Date(dataStr);
@@ -695,6 +686,14 @@
         const cnjFormatado = `${numDigAno}.${j}.${tr}.${foro}`;
 
         if (trib === "TJCE") {
+          // Se for Juizado Especial / Comarca Digital (ex: 6001), prioriza o PJe do TJCE
+          if (foro.startsWith("6") || foro === "6001") {
+            links.push({
+              nome: "PJe TJCE (Juizados / Digital)",
+              url: "https://pje.tjce.jus.br/pje/ConsultaPublica/listView.seam"
+            });
+          }
+
           links.push({
             nome: "e-SAJ TJCE (1º Grau)",
             url: `https://esaj.tjce.jus.br/cpopg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&numeroDigitoAnoUnificado=${encodeURIComponent(numDigAno)}&foroNumeroUnificado=${encodeURIComponent(foro)}&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(cnjFormatado)}`
@@ -702,10 +701,6 @@
           links.push({
             nome: "e-SAJ TJCE (2º Grau)",
             url: `https://esaj.tjce.jus.br/cposg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&numeroDigitoAnoUnificado=${encodeURIComponent(numDigAno)}&foroNumeroUnificado=${encodeURIComponent(foro)}&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(cnjFormatado)}`
-          });
-          links.push({
-            nome: "PJe TJCE",
-            url: "https://pje.tjce.jus.br/pje/ConsultaPublica/listView.seam"
           });
         } else if (trib === "TJSP") {
           links.push({
@@ -735,7 +730,6 @@
       return links;
     }
 
-    // Retorna a lista de processos que atendem aos filtros ativos
     function obterProcessosFiltrados() {
       const query = (document.getElementById("searchInput").value || "").toLowerCase();
       const empresaFiltro = document.getElementById("empresaFilter").value;
@@ -759,7 +753,6 @@
       });
     }
 
-    // Exportação para Excel (.xlsx)
     function exportarExcel() {
       const filtrados = obterProcessosFiltrados();
       if (!filtrados || filtrados.length === 0) {
@@ -777,7 +770,7 @@
         "Vara": p.vara || "",
         "Reclamante / Autor": p.reclamante || "",
         "Reclamado / Réu": p.reclamado || "",
-        "Última Movimentação": p.ultimaData ? new Date(p.ultimaData).toLocaleDateString('pt-BR') : "",
+        "Última Movimentação": formatarDataHora(p.ultimaData),
         "E-mails": p.email || ""
       }));
 
@@ -789,7 +782,6 @@
       XLSX.writeFile(workbook, `IAZ_Jud_Processos_${dataHoje}.xlsx`);
     }
 
-    // Exportação para PDF
     function exportarPDF() {
       const filtrados = obterProcessosFiltrados();
       if (!filtrados || filtrados.length === 0) {
@@ -804,7 +796,6 @@
       const nomeEmp = empresaSel ? obterNomeEmpresa(empresaSel) : "Todas as Empresas";
       const dataHora = new Date().toLocaleString('pt-BR');
 
-      // Cabeçalho do Relatório
       doc.setFontSize(14);
       doc.setTextColor(30, 41, 59);
       doc.text(`IAZ Jud - Relatório de Processos`, 14, 15);
@@ -813,7 +804,6 @@
       doc.setTextColor(100, 116, 139);
       doc.text(`Filtro: ${nomeEmp} | Total: ${filtrados.length} processo(s) | Emitido em: ${dataHora}`, 14, 21);
 
-      // Colunas da Tabela
       const colunas = ["Empresa", "Processo", "Apelido", "Tribunal", "Tipo", "Status", "Vara", "Última Data"];
       const linhas = filtrados.map(p => [
         obterNomeEmpresa(p.empresa) || "-",
@@ -823,7 +813,7 @@
         p.tipo || "Cível",
         p.status || "Ativo",
         p.vara || "-",
-        p.ultimaData ? new Date(p.ultimaData).toLocaleDateString('pt-BR') : "-"
+        formatarDataHora(p.ultimaData)
       ]);
 
       doc.autoTable({
@@ -888,56 +878,96 @@
 
         const htmlProcessos = listaDoTipo.map(p => {
           const tempoDesde = calcularDiasDesde(p.ultimaData);
-          const dataFormatada = p.ultimaData ? new Date(p.ultimaData).toLocaleDateString('pt-BR') : 'Sem registro';
+          const dataFormatada = formatarDataHora(p.ultimaData);
           const linksTribunal = obterLinksTribunal(p.processo, p.tribunal);
           const linkPrincipal = linksTribunal[0];
           const nomeEmpresa = obterNomeEmpresa(p.empresa);
+          const cleanId = String(p.processo).replace(/\D/g, '');
+
+          let badgeStatusClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60';
+          if (p.status === 'Arquivado') {
+            badgeStatusClass = 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60';
+          } else if (p.status === 'Suspenso') {
+            badgeStatusClass = 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60';
+          }
 
           return `
-          <details class="group/item bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl overflow-hidden transition shadow-sm mb-2.5">
-            <summary class="cursor-pointer select-none p-3.5 sm:p-4 flex items-center justify-between gap-3 bg-white dark:bg-slate-950 group-hover/item:bg-slate-50 dark:group-hover/item:bg-slate-900/50">
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5 flex-wrap mb-1">
-                  <span class="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">${p.apelido || 'Sem apelido'}</span>
-                  ${nomeEmpresa ? `<span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-slate-100 dark:bg-slate-800 text-blue-700 dark:text-blue-300 border border-slate-200 dark:border-slate-700">🏢 ${nomeEmpresa}</span>` : ''}
-                  ${p.tribunal ? `<span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60">${p.tribunal}</span>` : ''}
+          <details ontoggle="aoAbrirProcesso(this, '${cleanId}', '${p.processo}')" class="group/item bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl overflow-hidden transition shadow-sm mb-2.5">
+            
+            <!-- RESUMO DO CARD (Layout de 2 Linhas) -->
+            <summary class="cursor-pointer select-none p-3.5 sm:p-4 bg-white dark:bg-slate-950 group-hover/item:bg-slate-50 dark:group-hover/item:bg-slate-900/50">
+              
+              <!-- LINHA 1: Apelido, Empresa, Vara e Status -->
+              <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                <div class="flex items-center gap-2 flex-wrap min-w-0">
+                  <span class="text-sm font-bold text-slate-900 dark:text-slate-100">${p.apelido || 'Sem apelido'}</span>
+                  ${nomeEmpresa ? `<span class="px-2 py-0.5 text-[11px] font-semibold rounded bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">🏢 ${nomeEmpresa}</span>` : ''}
+                  ${p.vara ? `<span class="px-2 py-0.5 text-[11px] font-medium rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 truncate max-w-[220px]" title="${p.vara}">🏛️ ${p.vara}</span>` : ''}
                 </div>
-                <p class="text-xs text-slate-500 dark:text-slate-400 font-mono truncate select-all">${p.processo}</p>
+                
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 text-xs font-semibold rounded ${badgeStatusClass}">
+                    ${p.status || 'Ativo'}
+                  </span>
+                  <svg class="chevron-icon w-4 h-4 text-slate-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
               </div>
 
-              <div class="flex items-center gap-2.5 flex-shrink-0">
-                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80">
-                  ⏱️ ${tempoDesde}
-                </span>
-                <svg class="chevron-icon w-4 h-4 text-slate-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
+              <!-- LINHA 2: Processo e Data da Última Movimentação -->
+              <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-2 flex-wrap pt-0.5">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-slate-700 dark:text-slate-300 select-all font-medium">${p.processo}</span>
+                  ${p.tribunal ? `<span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold border border-slate-200 dark:border-slate-700">${p.tribunal}</span>` : ''}
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span>📅 Última mov.: <strong class="text-slate-800 dark:text-slate-200">${dataFormatada}</strong></span>
+                  <span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                    ⏱️ ${tempoDesde}
+                  </span>
+                </div>
               </div>
             </summary>
 
-            <div class="px-4 pb-4 pt-2 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40 space-y-3">
-              <div class="flex items-center justify-between flex-wrap gap-2">
-                <div class="flex items-center gap-2">
-                  <span class="px-2 py-0.5 text-xs font-semibold rounded ${
-                    p.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60' : 
-                    p.status === 'Arquivado' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60' :
-                    'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60'
-                  }">${p.status || 'Ativo'}</span>
-                  <span class="text-[11px] text-slate-500 dark:text-slate-400">Última data: <strong class="text-slate-800 dark:text-slate-200">${dataFormatada}</strong></span>
-                </div>
-                <div class="flex items-center gap-1">
+            <!-- CONTEÚDO EXPANDIDO (Histórico completo + Ações) -->
+            <div class="px-4 pb-4 pt-3 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40 space-y-3">
+              
+              <!-- Barra de Ações Rápidas -->
+              <div class="flex items-center justify-between flex-wrap gap-2 pt-1 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <button id="btn-sync-${cleanId}" onclick='event.stopPropagation(); sincronizarProcessoIndividual("${p.processo}", "${p.tribunal || ""}")' 
+                    class="px-2.5 py-1 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/60 border border-amber-300 dark:border-amber-800/80 rounded-md text-xs font-semibold transition flex items-center gap-1">
+                    <span>⚡</span> <span>Atualizar</span>
+                  </button>
+
+                  <button id="btn-email-${cleanId}" onclick='event.stopPropagation(); enviarEmailProcesso("${p.processo}")' 
+                    class="px-2.5 py-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 border border-blue-300 dark:border-blue-800/80 rounded-md text-xs font-semibold transition flex items-center gap-1"
+                    title="Enviar resumo e histórico por e-mail">
+                    <span>✉️</span> <span>Enviar E-mail</span>
+                  </button>
+
                   <button onclick='event.stopPropagation(); abrirEditar(${JSON.stringify(p)})' 
-                    class="p-1.5 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md text-xs transition">✏️ Editar</button>
+                    class="px-2.5 py-1 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md text-xs font-medium transition">
+                    ✏️ Editar
+                  </button>
+
                   <button onclick='event.stopPropagation(); excluirProcesso("${p.processo}")' 
-                    class="p-1.5 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md text-xs transition">🗑️ Excluir</button>
+                    class="px-2.5 py-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/60 border border-red-300 dark:border-red-800/80 rounded-md text-xs font-medium transition">
+                    🗑️ Excluir
+                  </button>
+                </div>
+
+                <div>
+                  <a href="${linkPrincipal.url}" target="_blank" onclick="event.stopPropagation()"
+                    class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1">
+                    🔗 Abrir no ${linkPrincipal.nome}
+                  </a>
                 </div>
               </div>
 
+              <!-- Informações das Partes e E-mails -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg shadow-sm">
-                <div class="sm:col-span-2">
-                  <span class="text-slate-500 font-semibold">🏛️ Vara:</span> 
-                  <span class="text-slate-800 dark:text-slate-200">${p.vara || '<span class="text-slate-400 italic">Não informada</span>'}</span>
-                </div>
                 <div>
                   <span class="text-slate-500 font-semibold">👤 Reclamante:</span> 
                   <span class="text-slate-800 dark:text-slate-200">${p.reclamante || '<span class="text-slate-400 italic">Não informado</span>'}</span>
@@ -946,21 +976,27 @@
                   <span class="text-slate-500 font-semibold">🏢 Reclamado:</span> 
                   <span class="text-slate-800 dark:text-slate-200">${p.reclamado || '<span class="text-slate-400 italic">Não informado</span>'}</span>
                 </div>
+                <div class="sm:col-span-2 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                  <span class="text-slate-500 font-semibold">✉️ E-mails cadastrados:</span> 
+                  <span class="text-slate-800 dark:text-slate-200">${p.email || '<span class="text-slate-400 italic">Nenhum</span>'}</span>
+                </div>
               </div>
 
-              <div class="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-850 flex-wrap gap-2">
-                <div class="flex items-center gap-3">
-                  <span class="text-xs text-slate-500 truncate max-w-[220px]" title="${p.email || ''}">✉️ ${p.email || 'Sem e-mail'}</span>
-                  <a href="${linkPrincipal.url}" target="_blank" onclick="event.stopPropagation()"
-                    class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">
-                    🔗 Abrir no ${linkPrincipal.nome}
-                  </a>
+              <!-- Histórico de Movimentações Inline -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                    📜 Histórico de Movimentações
+                  </h4>
+                  <button onclick="carregarHistoricoInline('${cleanId}', '${p.processo}', true)" class="text-[11px] text-blue-600 dark:text-blue-400 hover:underline">
+                    Recarregar histórico
+                  </button>
                 </div>
-                <button onclick='event.stopPropagation(); verMovimentacoes("${p.processo}", "${p.apelido || p.processo}", "${p.tribunal || ""}")' 
-                  class="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition">
-                  Ver Histórico Completo →
-                </button>
+                <div id="hist-inline-${cleanId}" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  <div class="text-center py-4 text-xs text-slate-400">Clique para carregar histórico...</div>
+                </div>
               </div>
+
             </div>
           </details>
           `;
@@ -991,7 +1027,124 @@
       }).join('');
     }
 
+    function aoAbrirProcesso(detailsEl, cleanId, numProcesso) {
+      if (detailsEl.open) {
+        carregarHistoricoInline(cleanId, numProcesso, false);
+      }
+    }
+
+    async function carregarHistoricoInline(cleanId, numProcesso, forcar = false) {
+      const box = document.getElementById(`hist-inline-${cleanId}`);
+      if (!box) return;
+
+      if (!forcar && box.dataset.loaded === "true") return;
+
+      box.innerHTML = `<div class="text-center py-4 text-xs text-slate-400 animate-pulse">Carregando movimentações da planilha...</div>`;
+
+      try {
+        const res = await apiRequest("movimentacoes", { processo: numProcesso });
+        if (res.success && res.data.length > 0) {
+          const ordenados = [...res.data].sort((a, b) => {
+            const dataA = a.dataMovimentacao ? new Date(a.dataMovimentacao).getTime() : 0;
+            const dataB = b.dataMovimentacao ? new Date(b.dataMovimentacao).getTime() : 0;
+            return dataB - dataA;
+          });
+
+          box.innerHTML = ordenados.map(m => `
+            <div class="border-l-2 border-blue-500 pl-3 py-1.5 space-y-1 bg-white dark:bg-slate-950/50 rounded-r-lg border border-slate-200/60 dark:border-slate-800/60 shadow-xs">
+              <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block font-mono">
+                📅 ${formatarDataHora(m.dataMovimentacao)}
+              </span>
+              <p class="text-xs text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">${m.atualizacao}</p>
+            </div>
+          `).join('');
+          box.dataset.loaded = "true";
+        } else {
+          box.innerHTML = `<div class="text-center py-3 text-xs text-slate-500 italic">Nenhuma movimentação registrada na planilha ainda. Clique em '⚡ Atualizar' para buscar no DataJud.</div>`;
+          box.dataset.loaded = "true";
+        }
+      } catch (err) {
+        box.innerHTML = `<div class="text-center py-3 text-xs text-red-500">Erro ao carregar movimentações.</div>`;
+      }
+    }
+
+    async function enviarEmailProcesso(numProcesso) {
+      if (!confirm(`Deseja enviar o relatório do processo ${numProcesso} por e-mail para os destinatários cadastrados?`)) return;
+
+      const cleanId = String(numProcesso).replace(/\D/g, '');
+      const btn = document.getElementById(`btn-email-${cleanId}`);
+      let htmlOriginal = "";
+
+      if (btn) {
+        htmlOriginal = btn.innerHTML;
+        btn.disabled = true;
+        btn.classList.add("opacity-70", "cursor-wait");
+        btn.innerHTML = `<span>⏳</span> <span>Enviando...</span>`;
+      }
+
+      try {
+        const res = await apiRequest("send_email_processo", { processo: numProcesso }, "POST");
+        if (res.success) {
+          alert(res.message || "E-mail enviado com sucesso!");
+        } else {
+          alert("Erro: " + (res.error || "Não foi possível enviar o e-mail."));
+        }
+      } catch (err) {
+        alert("Falha na conexão com a API.");
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove("opacity-70", "cursor-wait");
+          btn.innerHTML = htmlOriginal;
+        }
+      }
+    }
+
+    async function sincronizarProcessoIndividual(numProcesso, tribunal) {
+      const cleanId = String(numProcesso).replace(/\D/g, '');
+      const btn = document.getElementById(`btn-sync-${cleanId}`);
+      let htmlOriginal = "";
+      
+      if (btn) {
+        htmlOriginal = btn.innerHTML;
+        btn.disabled = true;
+        btn.classList.add("opacity-70", "cursor-wait");
+        btn.innerHTML = `<span class="animate-spin inline-block">⚡</span> <span>Buscando...</span>`;
+      }
+
+      try {
+        const res = await apiRequest("sync_processo", {
+          processo: numProcesso,
+          tribunal: tribunal
+        }, "POST");
+
+        if (res.success) {
+          await carregarProcessos();
+        } else {
+          alert(`Erro ao consultar processo: ${res.error || 'Falha no DataJud'}`);
+        }
+      } catch (err) {
+        alert("Erro na requisição com o script.");
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove("opacity-70", "cursor-wait");
+          btn.innerHTML = htmlOriginal;
+        }
+      }
+    }
+
+    // Sincronização em Segundo Plano (Assíncrona - Não bloqueia a tela)
     async function sincronizarDataJud() {
+      if (!processosData || processosData.length === 0) {
+        alert("Nenhum processo carregado na lista para atualizar.");
+        return;
+      }
+
+      if (!confirm("Deseja iniciar a checagem de todos os processos em segundo plano na planilha? Você pode continuar usando o aplicativo normalmente.")) {
+        return;
+      }
+
       const btn = document.getElementById("btnSideSync");
       const icon = document.getElementById("sideSyncIcon");
       const txt = document.getElementById("sideSyncText");
@@ -999,23 +1152,22 @@
       btn.disabled = true;
       btn.classList.add("opacity-60", "cursor-not-allowed");
       icon.classList.add("animate-spin");
-      if (txt) txt.innerText = "Consultando...";
+      if (txt) txt.innerText = "Iniciando...";
 
       try {
         const res = await apiRequest("sync", {}, "POST");
         if (res.success) {
-          await carregarProcessos();
-          alert("Verificação concluída com sucesso!");
+          alert("Sincronização iniciada com sucesso! O Google Sheets atualizará os dados e disparará os e-mails em segundo plano.");
         } else {
-          alert("Erro: " + res.error);
+          alert("Erro: " + (res.error || "Falha ao iniciar"));
         }
       } catch (err) {
-        alert("Erro ao conectar com a API.");
+        alert("Erro de conexão ao acionar a sincronização geral.");
       } finally {
         btn.disabled = false;
         btn.classList.remove("opacity-60", "cursor-not-allowed");
         icon.classList.remove("animate-spin");
-        if (txt) txt.innerText = "Checar DataJud";
+        if (txt) txt.innerText = "Checar DataJud (Todos)";
       }
     }
 
@@ -1066,49 +1218,6 @@
         }
       } catch (err) {
         alert("Erro na requisição.");
-      }
-    }
-
-    async function verMovimentacoes(numProcesso, titulo, tribunal) {
-      document.getElementById("movProcessoTitulo").innerText = titulo;
-      document.getElementById("movProcessoSubtitulo").innerText = numProcesso;
-      
-      const linkContainer = document.getElementById("movLinkTribunalContainer");
-      const links = obterLinksTribunal(numProcesso, tribunal);
-      
-      linkContainer.innerHTML = links.map(l => `
-        <a href="${l.url}" target="_blank" 
-          class="inline-flex items-center gap-1 text-[11px] text-blue-600 dark:text-blue-400 hover:underline bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/80 px-2 py-1 rounded-md transition font-medium">
-          <span>🔗</span> ${l.nome}
-        </a>
-      `).join('');
-
-      const lista = document.getElementById("movimentacoesLista");
-      lista.innerHTML = `<p class="text-center text-xs text-slate-500 py-6">Carregando...</p>`;
-      document.getElementById("movModal").classList.remove("hidden");
-
-      try {
-        const res = await apiRequest("movimentacoes", { processo: numProcesso });
-        if (res.success && res.data.length > 0) {
-          const ordenados = [...res.data].sort((a, b) => {
-            const dataA = a.dataMovimentacao ? new Date(a.dataMovimentacao).getTime() : 0;
-            const dataB = b.dataMovimentacao ? new Date(b.dataMovimentacao).getTime() : 0;
-            return dataB - dataA;
-          });
-
-          lista.innerHTML = ordenados.map(m => `
-            <div class="border-l-2 border-blue-500 pl-3 py-1.5 space-y-1 bg-slate-50 dark:bg-slate-950/30 rounded-r-lg">
-              <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block font-mono">
-                📅 ${m.dataMovimentacao ? new Date(m.dataMovimentacao).toLocaleString('pt-BR') : '-'}
-              </span>
-              <p class="text-xs text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">${m.atualizacao}</p>
-            </div>
-          `).join('');
-        } else {
-          lista.innerHTML = `<p class="text-center text-xs text-slate-500 py-6">Nenhuma movimentação registrada na planilha.</p>`;
-        }
-      } catch (err) {
-        lista.innerHTML = `<p class="text-center text-xs text-red-500 py-6">Erro ao buscar movimentações.</p>`;
       }
     }
 
@@ -1196,10 +1305,6 @@
 
     function closeEmpresaModal() {
       document.getElementById("empresaModal").classList.add("hidden");
-    }
-
-    function closeMovModal() {
-      document.getElementById("movModal").classList.add("hidden");
     }
 
     function openConfigModal() {
