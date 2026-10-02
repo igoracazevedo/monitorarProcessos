@@ -761,8 +761,13 @@
             url: `https://esaj.tjce.jus.br/cpopg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&numeroDigitoAnoUnificado=${encodeURIComponent(numDigAno)}&foroNumeroUnificado=${encodeURIComponent(foro)}&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(cnjFormatado)}`
           });
         } else if (trib === "TJSP") {
+          // Adiciona o link direto para a consulta pública do eproc TJSP e mantém o e-SAJ como alternativa
           links.push({
-            nome: "e-SAJ TJSP (1º Grau)",
+            nome: "eproc TJSP (Consulta Pública)",
+            url: `https://esaj.tjsp.jus.br/eproc/externo_consulta?numeroProcesso=${encodeURIComponent(numProcesso)}`
+          });
+          links.push({
+            nome: "e-SAJ TJSP (Legado)",
             url: `https://esaj.tjsp.jus.br/cpopg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&numeroDigitoAnoUnificado=${encodeURIComponent(numDigAno)}&foroNumeroUnificado=${encodeURIComponent(foro)}&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(cnjFormatado)}`
           });
         } else if (trib.startsWith("TRF")) {
