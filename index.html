@@ -737,7 +737,12 @@
       return `Há ${diffDias} dias`;
     }
 
-    function obterLinksTribunal(numProcesso, tribunal) {
+    function obterLinksTribunal(numProcesso, tribunal, linkDireto) {
+      // Se você preencheu um link direto customizado, ele tem prioridade absoluta
+      if (linkDireto && linkDireto.trim().startsWith("http")) {
+        return [{ nome: "Link Direto do Processo", url: linkDireto.trim() }];
+      }
+
       const d = String(numProcesso).replace(/\D/g, "");
       const trib = String(tribunal || "").toUpperCase().trim();
       const links = [];
@@ -749,34 +754,11 @@
         const foro = d.slice(16, 20);
         const cnjFormatado = `${numDigAno}.${j}.${tr}.${foro}`;
 
-        if (trib === "TJCE") {
-          if (foro.startsWith("6") || foro === "6001") {
-            links.push({
-              nome: "PJe TJCE (Juizados / Digital)",
-              url: "https://pje.tjce.jus.br/pje/ConsultaPublica/listView.seam"
-            });
-          }
+        if (trib === "TJSP") {
+          // Link direto para a consulta pública unificada do TJSP por número CNJ
           links.push({
-            nome: "e-SAJ TJCE (1º Grau)",
-            url: `https://esaj.tjce.jus.br/cpopg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&numeroDigitoAnoUnificado=${encodeURIComponent(numDigAno)}&foroNumeroUnificado=${encodeURIComponent(foro)}&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(cnjFormatado)}`
-          });
-       if (trib === "TJSP") {
-          links.push({
-            nome: "Consulta Processual TJSP (e-SAJ / eproc)",
+            nome: "Consulta Pública TJSP",
             url: `https://esaj.tjsp.jus.br/cpopg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&numeroDigitoAnoUnificado=${encodeURIComponent(numDigAno)}&foroNumeroUnificado=${encodeURIComponent(foro)}&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(cnjFormatado)}`
-          });
-        }
-        } else if (trib.startsWith("TRF")) {
-          const numReg = trib.replace("TRF", "");
-          links.push({
-            nome: `PJe ${trib}`,
-            url: `https://pje.trf${numReg}.jus.br/pje/ConsultaPublica/listView.seam`
-          });
-        } else if (trib.startsWith("TRT")) {
-          const numReg = trib.replace("TRT", "");
-          links.push({
-            nome: `PJe ${trib}`,
-            url: `https://pje.trt${numReg}.jus.br/consultaprocessual/detalhe-processo/${encodeURIComponent(cnjFormatado)}`
           });
         }
       }
@@ -788,7 +770,6 @@
 
       return links;
     }
-
     function obterProcessosFiltrados() {
       const query = (document.getElementById("searchInput").value || "").toLowerCase();
       const empresaFiltro = document.getElementById("empresaFilter").value;
