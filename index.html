@@ -814,22 +814,49 @@
     }
 
     async function sincronizarProcessoIndividual(numProcesso, tribunal) {
-      if (!API_URL) return alert("Configure a URL do Google Apps Script nas Configurações para realizar a consulta no DataJud.");
       const cleanId = String(numProcesso).replace(/\D/g, '');
       const btn = document.getElementById(`btn-sync-${cleanId}`);
       if (btn) btn.innerText = "Buscando...";
 
       try {
-        const res = await fetch(`${API_URL}?action=sync_processo`, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "sync_processo", processo: numProcesso, tribunal })
-        }).then(r => r.json());
+        // Remove a dependência do Apps Script e faz a chamada direta ao DataJud (ou simula a atualização)
+        const numeroLimpo = String(numProcesso).replace(/\D/g, "");
+        const siglaTribunal = String(tribunal || "TJSP").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const endpointDataJud = `https://api-publica.datajud.cnj.jus.br/api_publica_${siglaTribunal}/_search`;
 
-        if (res.success) await carregarProcessos();
-        else alert("Erro: " + res.error);
+        const payload = {
+          query: { match: { numeroProcesso: numeroLimpo } },
+          sort: [{ "dataHoraUltimaAtualizacao": { "order": "desc" } }]
+        };
+
+        const res = await fetch(endpointDataJud, {
+          method: "POST",
+          headers: {
+            "Authorization": "APIKey cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error("Tribunal indisponível no momento.");
+
+        const json = await res.json();
+        if (json.hits && json.hits.hits.length > 0) {
+          const doc = json.hits.hits[0]._source;
+          const ultimaMov = doc.movimentos && doc.movimentos.length > 0 ? doc.movimentos[0].dataHora : new Date().toISOString();
+
+          // Atualiza direto no Supabase
+          await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", {
+            ultima_data: ultimaMov
+          });
+
+          alert("Processo sincronizado com sucesso!");
+          await carregarProcessos();
+        } else {
+          alert("Processo não encontrado na base pública do DataJud.");
+        }
       } catch (e) {
-        alert("Falha ao conectar com o Apps Script.");
+        alert("Erro ao consultar DataJud: " + e.message);
       } finally {
         if (btn) btn.innerText = "⚡ Atualizar";
       }
