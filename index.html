@@ -42,7 +42,7 @@
           <img id="sideHeaderLogo" src="" alt="Logo" onerror="this.classList.add('hidden')" class="hidden h-9 w-auto max-w-[48px] object-contain rounded bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800">
           <div class="min-w-0">
             <h1 class="font-bold text-sm text-slate-900 dark:text-slate-100 leading-tight">IAZ Jud</h1>
-            <p id="sideHeaderEmpresa" class="text-[11px] text-blue-600 dark:text-blue-400 font-medium truncate">Monitoramento</p>
+            <p id="sideHeaderEmpresa" class="text-[11px] text-blue-600 dark:text-blue-400 font-medium truncate">Monitoramento Supabase</p>
           </div>
         </div>
         <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg p-1">✕</button>
@@ -309,8 +309,8 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">E-mails de Notificação (separe por vírgula ou ponto e vírgula)</label>
-          <input type="text" id="campoEmail" placeholder="advogado@empresa.com, financeiro@empresa.com"
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">E-mails de Notificação</label>
+          <input type="text" id="campoEmail" placeholder="advogado@empresa.com"
             class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
@@ -322,12 +322,12 @@
     </div>
   </div>
 
-  <!-- MODAL: Configurações & Tema (Vinculado à Planilha) -->
+  <!-- MODAL: Configurações & Tema -->
   <div id="configModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4">
       <div>
-        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">Configurações da Planilha</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Salvo centralizadamente na aba Configurações.</p>
+        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">Configurações do Sistema</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Gerencie tema e integração com Supabase / Apps Script.</p>
       </div>
 
       <div>
@@ -345,49 +345,72 @@
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">URL da API (Apps Script)</label>
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">URL da API (Google Apps Script)</label>
         <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec"
           class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-xs font-mono text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
       </div>
 
       <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
         <button onclick="closeConfigModal()" class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Fechar</button>
-        <button onclick="salvarConfiguracoesNaPlanilha()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium">Salvar na Planilha</button>
+        <button onclick="salvarConfiguracoes()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium">Salvar</button>
       </div>
     </div>
   </div>
 
-  <script>
-    const DEFAULT_API_URL = "SUA_URL_DO_WEBAPP_AQUI";
-    let API_URL = localStorage.getItem("PROCESSOS_API_URL") || DEFAULT_API_URL;
+  <script>    
+   // Configurações do Supabase (Apenas Chave Pública / Publishable)
+    const SUPABASE_URL = "https://kslmyvlewsmjnrhwklfd.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_WjgE2b2iKdZrRopbQieW3A_Cr9R9pGB"; // Chave pública segura para o GitHub
+    
+    let API_URL = localStorage.getItem("PROCESSOS_API_URL") || "";
     let CONFIG_GLOBAL = { app_theme: "dark", api_url: "" };
     let processosData = [];
     let empresasData = [];
     let logoTempBase64 = "";
 
     window.addEventListener("DOMContentLoaded", async () => {
-      await carregarConfiguracoesDaPlanilha();
+      await carregarConfiguracoesSupabase();
     });
 
-    async function carregarConfiguracoesDaPlanilha() {
-      try {
-        const res = await apiRequest("get_config");
-        if (res.success && res.config) {
-          CONFIG_GLOBAL = res.config;
-          if (CONFIG_GLOBAL.api_url) {
-            API_URL = CONFIG_GLOBAL.api_url;
-          }
-          aplicarTema(CONFIG_GLOBAL.app_theme || "dark");
+    async function supabaseRequest(endpoint, method = "GET", data = null, customHeaders = {}) {
+      const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+      const options = {
+        method: method,
+        headers: {
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation",
+          ...customHeaders
         }
-      } catch (e) {
-        console.error("Erro ao carregar configurações da planilha", e);
+      };
+
+      if (data && (method === "POST" || method === "PATCH" || method === "DELETE")) {
+        options.body = JSON.stringify(data);
       }
 
-      if (!API_URL || API_URL === "SUA_URL_DO_WEBAPP_AQUI") {
-        openConfigModal();
-      } else {
-        carregarProcessos();
+      const res = await fetch(url, options);
+      const text = await res.text();
+      
+      if (!res.ok) {
+        throw new Error(`Erro Supabase [${res.status}]: ${text}`);
       }
+
+      return text ? JSON.parse(text) : [];
+    }
+
+    async function carregarConfiguracoesSupabase() {
+      try {
+        const rows = await supabaseRequest("configuracoes?select=*");
+        rows.forEach(r => {
+          if (r.chave) CONFIG_GLOBAL[r.chave] = r.valor;
+        });
+        if (CONFIG_GLOBAL.api_url) API_URL = CONFIG_GLOBAL.api_url;
+        aplicarTema(CONFIG_GLOBAL.app_theme || "dark");
+      } catch (e) {
+        console.error("Erro ao carregar do Supabase", e);
+      }
+      carregarProcessos();
     }
 
     function aplicarTema(tema) {
@@ -419,42 +442,28 @@
     async function alterarTema(tema) {
       CONFIG_GLOBAL.app_theme = tema;
       aplicarTema(tema);
-      await salvarConfiguracoesNaPlanilha();
+      await supabaseRequest("configuracoes", "POST", { chave: "app_theme", valor: tema }, { "Prefer": "resolution=merge-duplicates" });
     }
 
-    async function salvarConfiguracoesNaPlanilha() {
+    async function salvarConfiguracoes() {
       const apiUrlVal = document.getElementById("apiUrlInput").value.trim();
       if (apiUrlVal) {
-        CONFIG_GLOBAL.api_url = apiUrlVal;
         API_URL = apiUrlVal;
+        CONFIG_GLOBAL.api_url = apiUrlVal;
         localStorage.setItem("PROCESSOS_API_URL", apiUrlVal);
+        await supabaseRequest("configuracoes", "POST", { chave: "api_url", valor: apiUrlVal }, { "Prefer": "resolution=merge-duplicates" });
       }
-
-      try {
-        const res = await apiRequest("save_config", { config: CONFIG_GLOBAL }, "POST");
-        if (res.success) {
-          closeConfigModal();
-          carregarProcessos();
-        } else {
-          alert("Erro ao salvar: " + res.error);
-        }
-      } catch (err) {
-        alert("Falha na conexão ao salvar configurações.");
-      }
+      closeConfigModal();
     }
 
     function toggleSidebar() {
-      const sidebar = document.getElementById("sidebar");
-      const overlay = document.getElementById("sidebarOverlay");
-      sidebar.classList.toggle("-translate-x-full");
-      overlay.classList.toggle("hidden");
+      document.getElementById("sidebar").classList.toggle("-translate-x-full");
+      document.getElementById("sidebarOverlay").classList.toggle("hidden");
     }
 
     function fecharSidebar() {
-      const sidebar = document.getElementById("sidebar");
-      const overlay = document.getElementById("sidebarOverlay");
-      sidebar.classList.add("-translate-x-full");
-      overlay.classList.add("hidden");
+      document.getElementById("sidebar").classList.add("-translate-x-full");
+      document.getElementById("sidebarOverlay").classList.add("hidden");
     }
 
     function tratarUrlImagem(url) {
@@ -476,27 +485,13 @@
         const img = new Image();
         img.onload = function() {
           const canvas = document.createElement("canvas");
-          let width = img.width;
-          let height = img.height;
+          let width = img.width, height = img.height;
           const maxDim = 120;
-          if (width > height) {
-            if (width > maxDim) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            }
-          } else {
-            if (height > maxDim) {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
-            }
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, width, height);
-
+          if (width > height && width > maxDim) { height = Math.round((height * maxDim) / width); width = maxDim; }
+          else if (height > maxDim) { width = Math.round((width * maxDim) / height); height = maxDim; }
+          canvas.width = width; canvas.height = height;
+          canvas.getContext("2d").drawImage(img, 0, 0, width, height);
           logoTempBase64 = canvas.toDataURL("image/png");
-          document.getElementById("campoEmpLogo").value = "";
           exibirPreviewLogo(logoTempBase64);
         };
         img.src = e.target.result;
@@ -515,10 +510,8 @@
     }
 
     function exibirPreviewLogo(src) {
-      const container = document.getElementById("logoPreviewContainer");
-      const img = document.getElementById("logoPreviewImg");
-      img.src = src;
-      container.classList.remove("hidden");
+      document.getElementById("logoPreviewImg").src = src;
+      document.getElementById("logoPreviewContainer").classList.remove("hidden");
     }
 
     function limparLogoForm() {
@@ -530,46 +523,41 @@
 
     function gerarProximoCodigoEmpresa() {
       if (!empresasData || empresasData.length === 0) return "EMP-01";
-      const numeros = empresasData.map(e => {
-        const num = parseInt(String(e.codigo).replace(/\D/g, ""), 10);
-        return isNaN(num) ? 0 : num;
-      });
-      const maxNum = Math.max(0, ...numeros);
-      return `EMP-${String(maxNum + 1).padStart(2, "0")}`;
-    }
-
-    async function apiRequest(action, data = null, method = "GET") {
-      const url = method === "GET" 
-        ? `${API_URL}?action=${encodeURIComponent(action)}${data ? '&' + new URLSearchParams(data).toString() : ''}`
-        : API_URL;
-
-      const opts = { method, redirect: "follow" };
-      if (method === "POST") {
-        opts.headers = { "Content-Type": "text/plain;charset=utf-8" };
-        opts.body = JSON.stringify({ action, ...data });
-      }
-
-      const res = await fetch(url, opts);
-      return await res.json();
+      const numeros = empresasData.map(e => parseInt(String(e.codigo).replace(/\D/g, ""), 10) || 0);
+      return `EMP-${String(Math.max(0, ...numeros) + 1).padStart(2, "0")}`;
     }
 
     async function carregarProcessos() {
       const container = document.getElementById("processosContainer");
-      container.innerHTML = `<div class="text-center py-12 text-slate-500 text-sm">Carregando dados...</div>`;
+      container.innerHTML = `<div class="text-center py-12 text-slate-500 text-sm">Carregando dados do Supabase...</div>`;
       try {
-        const res = await apiRequest("list");
-        if (res.success) {
-          processosData = res.data;
-          empresasData = res.empresas || [];
-          atualizarSeletoresEmpresa();
-          renderizarListaEmpresasModal();
-          atualizarIdentidadeVisual();
-          renderProcessos();
-        } else {
-          container.innerHTML = `<div class="text-center text-red-500 text-sm py-4">Erro: ${res.error}</div>`;
-        }
+        const [empresasRes, processosRes] = await Promise.all([
+          supabaseRequest("empresas?select=*"),
+          supabaseRequest("processos?select=*")
+        ]);
+
+        empresasData = empresasRes || [];
+        processosData = (processosRes || []).map((r, index) => ({
+          rowIndex: index + 2,
+          processo: r.processo,
+          email: r.email,
+          tribunal: r.tribunal,
+          ultimaData: r.ultima_data,
+          status: r.status || "Ativo",
+          apelido: r.apelido,
+          reclamante: r.reclamante || "",
+          reclamado: r.reclamado || "",
+          vara: r.vara || "",
+          tipo: r.tipo || "",
+          empresa: String(r.empresa || "").trim()
+        }));
+
+        atualizarSeletoresEmpresa();
+        renderizarListaEmpresasModal();
+        atualizarIdentidadeVisual();
+        renderProcessos();
       } catch (err) {
-        container.innerHTML = `<div class="text-center text-red-500 text-sm py-4">Falha ao conectar com o script. Verifique as configurações.</div>`;
+        container.innerHTML = `<div class="text-center text-red-500 text-sm py-4">Erro ao carregar do Supabase: ${err.message}</div>`;
       }
     }
 
@@ -591,12 +579,11 @@
     function renderizarListaEmpresasModal() {
       const container = document.getElementById("empresasListaContainer");
       if (empresasData.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 py-3 text-center">Nenhuma empresa cadastrada na planilha.</p>`;
+        container.innerHTML = `<p class="text-xs text-slate-500 py-3 text-center">Nenhuma empresa cadastrada.</p>`;
         return;
       }
-
       container.innerHTML = empresasData.map(e => {
-        const logoUrl = tratarUrlImagem(e.logo);
+        const logoUrl = tratarUrlImagem(e.logotipo);
         return `
         <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
           <div class="flex items-center gap-2 min-w-0">
@@ -607,8 +594,7 @@
             </div>
           </div>
           <button onclick="excluirEmpresa('${e.codigo}')" class="text-red-500 hover:text-red-400 p-1 text-xs">🗑️</button>
-        </div>
-        `;
+        </div>`;
       }).join('');
     }
 
@@ -618,39 +604,20 @@
     }
 
     function atualizarIdentidadeVisual() {
-      const codSelecionado = document.getElementById("empresaFilter").value;
-      let emp = null;
-
-      if (codSelecionado) {
-        emp = empresasData.find(e => String(e.codigo).trim() === String(codSelecionado).trim());
-      } else if (empresasData.length > 0) {
-        emp = empresasData[0];
-      }
+      const codSel = document.getElementById("empresaFilter").value;
+      const emp = codSel ? empresasData.find(e => String(e.codigo).trim() === String(codSel).trim()) : empresasData[0];
+      const logoUrl = emp ? tratarUrlImagem(emp.logotipo) : "";
 
       const sideLogo = document.getElementById("sideHeaderLogo");
       const sideNome = document.getElementById("sideHeaderEmpresa");
       const topLogo = document.getElementById("topHeaderLogo");
       const topSub = document.getElementById("topHeaderSubtitulo");
 
-      const logoUrl = emp ? tratarUrlImagem(emp.logo) : "";
+      if (logoUrl) { sideLogo.src = logoUrl; sideLogo.classList.remove("hidden"); topLogo.src = logoUrl; topLogo.classList.remove("hidden"); }
+      else { sideLogo.classList.add("hidden"); topLogo.classList.add("hidden"); }
 
-      if (logoUrl) {
-        sideLogo.src = logoUrl;
-        sideLogo.classList.remove("hidden");
-        topLogo.src = logoUrl;
-        topLogo.classList.remove("hidden");
-      } else {
-        sideLogo.classList.add("hidden");
-        topLogo.classList.add("hidden");
-      }
-
-      if (emp && emp.nome) {
-        sideNome.innerText = emp.nome;
-        topSub.innerText = emp.nome;
-      } else {
-        sideNome.innerText = "Monitoramento";
-        topSub.innerText = "Visão Geral dos Autos";
-      }
+      if (emp && emp.nome) { sideNome.innerText = emp.nome; topSub.innerText = emp.nome; }
+      else { sideNome.innerText = "Monitoramento Supabase"; topSub.innerText = "Visão Geral dos Autos"; }
     }
 
     function obterNomeEmpresa(cod) {
@@ -661,219 +628,99 @@
 
     async function salvarEmpresa(e) {
       e.preventDefault();
-      const btn = document.getElementById("btnSalvarEmp");
-      btn.innerText = "Salvando...";
-      btn.disabled = true;
+      const codigo = document.getElementById("campoEmpCodigo").value.trim();
+      const nome = document.getElementById("campoEmpNome").value.trim();
+      const logotipo = logoTempBase64 || tratarUrlImagem(document.getElementById("campoEmpLogo").value);
 
-      const logoFinal = logoTempBase64 || tratarUrlImagem(document.getElementById("campoEmpLogo").value);
-
-      const payload = {
-        codigo: document.getElementById("campoEmpCodigo").value.trim(),
-        nome: document.getElementById("campoEmpNome").value.trim(),
-        logo: logoFinal
-      };
-
-      try {
-        const res = await apiRequest("add_empresa", payload, "POST");
-        if (res.success) {
-          limparLogoForm();
-          document.getElementById("empresaForm").reset();
-          await carregarProcessos();
-          document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
-        } else {
-          alert("Erro: " + res.error);
-        }
-      } catch (err) {
-        alert("Erro ao salvar empresa.");
-      } finally {
-        btn.innerText = "Adicionar Empresa";
-        btn.disabled = false;
-      }
+      await supabaseRequest("empresas", "POST", { codigo, nome, logotipo }, { "Prefer": "resolution=merge-duplicates" });
+      limparLogoForm();
+      document.getElementById("empresaForm").reset();
+      await carregarProcessos();
+      document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
     }
 
     async function excluirEmpresa(cod) {
       if (!confirm(`Deseja realmente excluir a empresa ${cod}?`)) return;
-      try {
-        const res = await apiRequest("delete_empresa", { codigo: cod }, "POST");
-        if (res.success) {
-          await carregarProcessos();
-          document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
-        } else {
-          alert("Erro ao excluir: " + res.error);
-        }
-      } catch (err) {
-        alert("Erro na requisição.");
-      }
+      await supabaseRequest(`empresas?codigo=eq.${encodeURIComponent(cod)}`, "DELETE");
+      await carregarProcessos();
+      document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
     }
 
     function formatarDataHora(dataStr) {
       if (!dataStr) return 'Sem registro';
       const d = new Date(dataStr);
       if (isNaN(d.getTime())) return String(dataStr);
-      
-      const dia = String(d.getDate()).padStart(2, '0');
-      const mes = String(d.getMonth() + 1).padStart(2, '0');
-      const ano = d.getFullYear();
-      const hora = String(d.getHours()).padStart(2, '0');
-      const min = String(d.getMinutes()).padStart(2, '0');
-      
-      return `${dia}/${mes}/${ano} às ${hora}:${min}`;
+      return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} às ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     }
 
     function calcularDiasDesde(dataStr) {
       if (!dataStr) return "Sem data";
       const dataMov = new Date(dataStr);
       if (isNaN(dataMov.getTime())) return "Sem data";
-      
-      const hoje = new Date();
-      const hojeZero = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
-      const movZero = new Date(dataMov.getFullYear(), dataMov.getMonth(), dataMov.getDate()).getTime();
-      
-      const diffMs = hojeZero - movZero;
-      const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
+      const diffDias = Math.floor((new Date().setHours(0,0,0,0) - new Date(dataMov.getFullYear(), dataMov.getMonth(), dataMov.getDate()).getTime()) / (1000 * 60 * 60 * 24));
       if (diffDias <= 0) return "Hoje";
       if (diffDias === 1) return "Há 1 dia";
       return `Há ${diffDias} dias`;
     }
 
-    function obterLinksTribunal(numProcesso, tribunal, linkDireto) {
-      // Se você preencheu um link direto customizado, ele tem prioridade absoluta
-      if (linkDireto && linkDireto.trim().startsWith("http")) {
-        return [{ nome: "Link Direto do Processo", url: linkDireto.trim() }];
-      }
-
+    function obterLinksTribunal(numProcesso, tribunal) {
       const d = String(numProcesso).replace(/\D/g, "");
       const trib = String(tribunal || "").toUpperCase().trim();
       const links = [];
-
       if (d.length === 20) {
         const numDigAno = `${d.slice(0, 7)}-${d.slice(7, 9)}.${d.slice(9, 13)}`;
-        const j = d.slice(13, 14);
-        const tr = d.slice(14, 16);
         const foro = d.slice(16, 20);
-        const cnjFormatado = `${numDigAno}.${j}.${tr}.${foro}`;
-
-        if (trib === "TJSP") {
-          // Link direto para a consulta pública unificada do TJSP por número CNJ
+        const cnjFormatado = `${numDigAno}.${d.slice(13, 14)}.${d.slice(14, 16)}.${foro}`;
+        if (trib === "TJSP" || trib === "TJCE") {
           links.push({
-            nome: "Consulta Pública TJSP",
+            nome: `Consulta ${trib} (e-SAJ/Unificada)`,
             url: `https://esaj.tjsp.jus.br/cpopg/search.do?cbPesquisa=NUMPROC&dadosConsulta.tipoNuProcesso=UNIFICADO&numeroDigitoAnoUnificado=${encodeURIComponent(numDigAno)}&foroNumeroUnificado=${encodeURIComponent(foro)}&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(cnjFormatado)}`
           });
         }
       }
-
-      links.push({
-        nome: "CNJ (Comunica PJe)",
-        url: `https://comunica.pje.jus.br/consulta?numeroUnico=${d}`
-      });
-
+      links.push({ nome: "CNJ (Comunica PJe)", url: `https://comunica.pje.jus.br/consulta?numeroUnico=${d}` });
       return links;
     }
+
     function obterProcessosFiltrados() {
       const query = (document.getElementById("searchInput").value || "").toLowerCase();
       const empresaFiltro = document.getElementById("empresaFilter").value;
-      
       return processosData.filter(p => {
         const matchesEmpresa = !empresaFiltro || String(p.empresa || '').trim() === String(empresaFiltro).trim();
         const nomeEmp = obterNomeEmpresa(p.empresa).toLowerCase();
-        
-        const matchesQuery = 
-          (p.processo || '').toLowerCase().includes(query) ||
-          (p.apelido || '').toLowerCase().includes(query) ||
-          (p.tribunal || '').toLowerCase().includes(query) ||
-          (p.tipo || '').toLowerCase().includes(query) ||
-          (p.reclamante || '').toLowerCase().includes(query) ||
-          (p.reclamado || '').toLowerCase().includes(query) ||
-          (p.vara || '').toLowerCase().includes(query) ||
-          (p.email || '').toLowerCase().includes(query) ||
-          nomeEmp.includes(query);
-
+        const matchesQuery = (p.processo || '').toLowerCase().includes(query) || (p.apelido || '').toLowerCase().includes(query) || (p.tribunal || '').toLowerCase().includes(query) || (p.reclamante || '').toLowerCase().includes(query) || (p.reclamado || '').toLowerCase().includes(query) || (p.vara || '').toLowerCase().includes(query) || nomeEmp.includes(query);
         return matchesEmpresa && matchesQuery;
       });
     }
 
     function exportarExcel() {
       const filtrados = obterProcessosFiltrados();
-      if (!filtrados || filtrados.length === 0) {
-        alert("Nenhum processo para exportar.");
-        return;
-      }
-
-      const dadosParaExportar = filtrados.map(p => ({
-        "Empresa": obterNomeEmpresa(p.empresa),
-        "Processo": p.processo,
-        "Apelido": p.apelido || "",
-        "Tribunal": p.tribunal || "",
-        "Tipo": p.tipo || "Cível",
-        "Status": p.status || "Ativo",
-        "Vara": p.vara || "",
-        "Reclamante / Autor": p.reclamante || "",
-        "Reclamado / Réu": p.reclamado || "",
-        "Última Movimentação": formatarDataHora(p.ultimaData),
-        "E-mails": p.email || ""
-      }));
-
-      const worksheet = XLSX.utils.json_to_sheet(dadosParaExportar);
+      if (!filtrados.length) return alert("Nenhum processo para exportar.");
+      const worksheet = XLSX.utils.json_to_sheet(filtrados.map(p => ({
+        "Empresa": obterNomeEmpresa(p.empresa), "Processo": p.processo, "Apelido": p.apelido || "", "Tribunal": p.tribunal || "", "Status": p.status || "Ativo", "Vara": p.vara || "", "Reclamante": p.reclamante || "", "Reclamado": p.reclamado || "", "Última Movimentação": formatarDataHora(p.ultimaData)
+      })));
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Processos");
-
-      const dataHoje = new Date().toISOString().slice(0, 10);
-      XLSX.writeFile(workbook, `IAZ_Jud_Processos_${dataHoje}.xlsx`);
+      XLSX.writeFile(workbook, `IAZ_Jud_Processos_${new Date().toISOString().slice(0, 10)}.xlsx`);
     }
 
     function exportarPDF() {
       const filtrados = obterProcessosFiltrados();
-      if (!filtrados || filtrados.length === 0) {
-        alert("Nenhum processo para exportar.");
-        return;
-      }
-
+      if (!filtrados.length) return alert("Nenhum processo para exportar.");
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: "landscape" });
-
-      const empresaSel = document.getElementById("empresaFilter").value;
-      const nomeEmp = empresaSel ? obterNomeEmpresa(empresaSel) : "Todas as Empresas";
-      const dataHora = new Date().toLocaleString('pt-BR');
-
-      doc.setFontSize(14);
-      doc.setTextColor(30, 41, 59);
-      doc.text(`IAZ Jud - Relatório de Processos`, 14, 15);
-
-      doc.setFontSize(9);
-      doc.setTextColor(100, 116, 139);
-      doc.text(`Filtro: ${nomeEmp} | Total: ${filtrados.length} processo(s) | Emitido em: ${dataHora}`, 14, 21);
-
-      const colunas = ["Empresa", "Processo", "Apelido", "Tribunal", "Tipo", "Status", "Vara", "Última Data"];
-      const linhas = filtrados.map(p => [
-        obterNomeEmpresa(p.empresa) || "-",
-        p.processo,
-        p.apelido || "-",
-        p.tribunal || "-",
-        p.tipo || "Cível",
-        p.status || "Ativo",
-        p.vara || "-",
-        formatarDataHora(p.ultimaData)
-      ]);
-
+      doc.text("IAZ Jud - Relatório Supabase", 14, 15);
       doc.autoTable({
-        head: [colunas],
-        body: linhas,
-        startY: 25,
-        theme: 'grid',
-        styles: { fontSize: 8, cellPadding: 2.5 },
-        headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [248, 250, 252] }
+        head: [["Empresa", "Processo", "Apelido", "Tribunal", "Status", "Vara", "Última Data"]],
+        body: filtrados.map(p => [obterNomeEmpresa(p.empresa), p.processo, p.apelido || "-", p.tribunal || "-", p.status || "Ativo", p.vara || "-", formatarDataHora(p.ultimaData)]),
+        startY: 22, theme: 'grid', styles: { fontSize: 8 }
       });
-
-      const dataHoje = new Date().toISOString().slice(0, 10);
-      doc.save(`IAZ_Jud_Relatorio_${dataHoje}.pdf`);
+      doc.save(`IAZ_Jud_Relatorio_${new Date().toISOString().slice(0, 10)}.pdf`);
     }
 
     function renderProcessos() {
       const filtrados = obterProcessosFiltrados();
       const container = document.getElementById("processosContainer");
-
       let ativos = 0, suspensos = 0, arquivados = 0;
       filtrados.forEach(p => {
         const st = (p.status || "Ativo").trim().toLowerCase();
@@ -885,340 +732,145 @@
       document.getElementById("countSuspensos").innerText = suspensos;
       document.getElementById("countArquivados").innerText = arquivados;
 
-      if (filtrados.length === 0) {
-        container.innerHTML = `<div class="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-slate-500 text-sm shadow-sm">Nenhum processo encontrado.</div>`;
+      if (!filtrados.length) {
+        container.innerHTML = `<div class="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-slate-500 text-sm">Nenhum processo encontrado.</div>`;
         return;
       }
 
       const grupos = {};
       filtrados.forEach(p => {
-        const tipo = (p.tipo && p.tipo.trim()) ? p.tipo.trim() : "Cível";
+        const tipo = p.tipo ? p.tipo.trim() : "Cível";
         if (!grupos[tipo]) grupos[tipo] = [];
         grupos[tipo].push(p);
       });
 
-      const ordemTipos = ["Trabalhista", "Cível", "Criminal", "Tributário", "Previdenciário", "Eleitoral", "Outro"];
-      const tiposOrdenados = Object.keys(grupos).sort((a, b) => {
-        const idxA = ordemTipos.indexOf(a);
-        const idxB = ordemTipos.indexOf(b);
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
-        return a.localeCompare(b);
-      });
-
-      container.innerHTML = tiposOrdenados.map(tipo => {
-        const listaDoTipo = grupos[tipo];
-
-        listaDoTipo.sort((a, b) => {
-          const tA = a.ultimaData ? new Date(a.ultimaData).getTime() : 0;
-          const tB = b.ultimaData ? new Date(b.ultimaData).getTime() : 0;
-          return tB - tA;
-        });
-
-        const total = listaDoTipo.length;
-
-        let icone = "📁";
-        const tLow = tipo.toLowerCase();
-        if (tLow.includes("trabalh")) icone = "💼";
-        else if (tLow.includes("crim")) icone = "🚨";
-        else if (tLow.includes("tribut")) icone = "🏛️";
-        else if (tLow.includes("previd")) icone = "🛡️";
-        else if (tLow.includes("cív") || tLow.includes("civ")) icone = "⚖️";
-        else if (tLow.includes("eleit")) icone = "🗳️";
-
-        const htmlProcessos = listaDoTipo.map(p => {
-          const tempoDesde = calcularDiasDesde(p.ultimaData);
-          const dataFormatada = formatarDataHora(p.ultimaData);
-          const linksTribunal = obterLinksTribunal(p.processo, p.tribunal);
-          const linkPrincipal = linksTribunal[0];
-          const nomeEmpresa = obterNomeEmpresa(p.empresa);
+      container.innerHTML = Object.keys(grupos).map(tipo => {
+        const lista = grupos[tipo].sort((a, b) => (new Date(b.ultimaData).getTime() || 0) - (new Date(a.ultimaData).getTime() || 0));
+        const htmlProcessos = lista.map(p => {
           const cleanId = String(p.processo).replace(/\D/g, '');
-
-          let badgeStatusClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60';
-          if (p.status === 'Arquivado') {
-            badgeStatusClass = 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60';
-          } else if (p.status === 'Suspenso') {
-            badgeStatusClass = 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60';
-          }
-
+          const link = obterLinksTribunal(p.processo, p.tribunal)[0];
           return `
-          <details ontoggle="aoAbrirProcesso(this, '${cleanId}', '${p.processo}')" class="group/item bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl overflow-hidden transition shadow-sm mb-2.5">
-            <summary class="cursor-pointer select-none p-3.5 sm:p-4 bg-white dark:bg-slate-950 group-hover/item:bg-slate-50 dark:group-hover/item:bg-slate-900/50">
+          <details ontoggle="aoAbrirProcesso(this, '${cleanId}', '${p.processo}')" class="group/item bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm mb-2.5">
+            <summary class="cursor-pointer select-none p-3.5 sm:p-4 bg-white dark:bg-slate-950">
               <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
                 <div class="flex items-center gap-2 flex-wrap min-w-0">
                   <span class="text-sm font-bold text-slate-900 dark:text-slate-100">${p.apelido || 'Sem apelido'}</span>
-                  ${nomeEmpresa ? `<span class="px-2 py-0.5 text-[11px] font-semibold rounded bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">🏢 ${nomeEmpresa}</span>` : ''}
-                  ${p.vara ? `<span class="px-2 py-0.5 text-[11px] font-medium rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 truncate max-w-[220px]" title="${p.vara}">🏛️ ${p.vara}</span>` : ''}
+                  ${p.empresa ? `<span class="px-2 py-0.5 text-[11px] font-semibold rounded bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300">🏢 ${obterNomeEmpresa(p.empresa)}</span>` : ''}
                 </div>
-                
-                <div class="flex items-center gap-2">
-                  <span class="px-2 py-0.5 text-xs font-semibold rounded ${badgeStatusClass}">
-                    ${p.status || 'Ativo'}
-                  </span>
-                  <svg class="chevron-icon w-4 h-4 text-slate-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+                <span class="px-2 py-0.5 text-xs font-semibold rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">${p.status || 'Ativo'}</span>
               </div>
-
-              <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-2 flex-wrap pt-0.5">
-                <div class="flex items-center gap-2">
-                  <span class="font-mono text-slate-700 dark:text-slate-300 select-all font-medium">${p.processo}</span>
-                  ${p.tribunal ? `<span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold border border-slate-200 dark:border-slate-700">${p.tribunal}</span>` : ''}
-                </div>
-                <div class="flex items-center gap-1.5">
-                  <span>📅 Última mov.: <strong class="text-slate-800 dark:text-slate-200">${dataFormatada}</strong></span>
-                  <span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                    ⏱️ ${tempoDesde}
-                  </span>
-                </div>
+              <div class="flex items-center justify-between text-xs text-slate-500 gap-2 flex-wrap">
+                <span class="font-mono text-slate-700 dark:text-slate-300 font-medium">${p.processo} (${p.tribunal || 'Tribunal'})</span>
+                <span>⏱️ ${calcularDiasDesde(p.ultimaData)}</span>
               </div>
             </summary>
-
-            <div class="px-4 pb-4 pt-3 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40 space-y-3">
+            <div class="px-4 pb-4 pt-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 space-y-3">
               <div class="flex items-center justify-between flex-wrap gap-2 pt-1 pb-2 border-b border-slate-200 dark:border-slate-800">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <button id="btn-sync-${cleanId}" onclick='event.stopPropagation(); sincronizarProcessoIndividual("${p.processo}", "${p.tribunal || ""}")' 
-                    class="px-2.5 py-1 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/60 border border-amber-300 dark:border-amber-800/80 rounded-md text-xs font-semibold transition flex items-center gap-1">
-                    <span>⚡</span> <span>Atualizar</span>
-                  </button>
-
-                  <button id="btn-email-${cleanId}" onclick='event.stopPropagation(); enviarEmailProcesso("${p.processo}")' 
-                    class="px-2.5 py-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 border border-blue-300 dark:border-blue-800/80 rounded-md text-xs font-semibold transition flex items-center gap-1">
-                    <span>✉️</span> <span>Enviar E-mail</span>
-                  </button>
-
-                  <button onclick='event.stopPropagation(); abrirEditar(${JSON.stringify(p)})' 
-                    class="px-2.5 py-1 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md text-xs font-medium transition">
-                    ✏️ Editar
-                  </button>
-
-                  <button onclick='event.stopPropagation(); excluirProcesso("${p.processo}")' 
-                    class="px-2.5 py-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/60 border border-red-300 dark:border-red-800/80 rounded-md text-xs font-medium transition">
-                    🗑️ Excluir
-                  </button>
+                <div class="flex items-center gap-1.5">
+                  <button id="btn-sync-${cleanId}" onclick="sincronizarProcessoIndividual('${p.processo}', '${p.tribunal}')" class="px-2.5 py-1 text-amber-600 border border-amber-300 rounded-md text-xs font-semibold">⚡ Atualizar</button>
+                  <button id="btn-email-${cleanId}" onclick="enviarEmailProcesso('${p.processo}')" class="px-2.5 py-1 text-blue-600 border border-blue-300 rounded-md text-xs font-semibold">✉️ E-mail</button>
+                  <button onclick='abrirEditar(${JSON.stringify(p)})' class="px-2.5 py-1 text-slate-600 border border-slate-300 rounded-md text-xs">✏️ Editar</button>
+                  <button onclick="excluirProcesso('${p.processo}')" class="px-2.5 py-1 text-red-600 border border-red-300 rounded-md text-xs">🗑️ Excluir</button>
                 </div>
-
-                <div>
-                  <a href="${linkPrincipal.url}" target="_blank" onclick="event.stopPropagation()"
-                    class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1">
-                    🔗 Abrir no ${linkPrincipal.nome}
-                  </a>
-                </div>
+                <a href="${link.url}" target="_blank" class="text-xs text-blue-600 dark:text-blue-400 font-semibold">🔗 Abrir no ${link.nome}</a>
               </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg shadow-sm">
-                <div>
-                  <span class="text-slate-500 font-semibold">👤 Reclamante:</span> 
-                  <span class="text-slate-800 dark:text-slate-200">${p.reclamante || '<span class="text-slate-400 italic">Não informado</span>'}</span>
-                </div>
-                <div>
-                  <span class="text-slate-500 font-semibold">🏢 Reclamado:</span> 
-                  <span class="text-slate-800 dark:text-slate-200">${p.reclamado || '<span class="text-slate-400 italic">Não informado</span>'}</span>
-                </div>
-                <div class="sm:col-span-2 pt-1 border-t border-slate-100 dark:border-slate-800/60">
-                  <span class="text-slate-500 font-semibold">✉️ E-mails cadastrados:</span> 
-                  <span class="text-slate-800 dark:text-slate-200">${p.email || '<span class="text-slate-400 italic">Nenhum</span>'}</span>
-                </div>
-              </div>
-
               <div>
-                <div class="flex items-center justify-between mb-2">
-                  <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-                    📜 Histórico de Movimentações
-                  </h4>
-                  <button onclick="carregarHistoricoInline('${cleanId}', '${p.processo}', true)" class="text-[11px] text-blue-600 dark:text-blue-400 hover:underline">
-                    Recarregar histórico
-                  </button>
-                </div>
-                <div id="hist-inline-${cleanId}" class="space-y-2 max-h-72 overflow-y-auto pr-1">
-                  <div class="text-center py-4 text-xs text-slate-400">Clique para carregar histórico...</div>
+                <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2">📜 Histórico de Movimentações</h4>
+                <div id="hist-inline-${cleanId}" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  <div class="text-center py-3 text-xs text-slate-400">Clique para carregar...</div>
                 </div>
               </div>
             </div>
-          </details>
-          `;
+          </details>`;
         }).join('');
-
-        return `
-        <details class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm transition">
-          <summary class="cursor-pointer select-none px-4 py-3.5 flex items-center justify-between bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 border-b border-transparent group-open:border-slate-200 dark:group-open:border-slate-800 transition">
-            <div class="flex items-center gap-2.5">
-              <span class="text-lg">${icone}</span>
-              <span class="font-bold text-sm text-slate-900 dark:text-slate-100">${tipo}</span>
-              <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80">
-                ${total} ${total === 1 ? 'processo' : 'processos'}
-              </span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-slate-500 group-open:hidden">Abrir lista</span>
-              <svg class="chevron-icon w-4 h-4 text-slate-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </summary>
-          <div class="p-3 bg-slate-100/60 dark:bg-slate-950/40">
-            ${htmlProcessos}
-          </div>
-        </details>
-        `;
+        return `<details class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm mb-3">
+          <summary class="cursor-pointer px-4 py-3.5 flex items-center justify-between font-bold text-sm"><span>📁 ${tipo} (${lista.length})</span></summary>
+          <div class="p-3 bg-slate-100/60 dark:bg-slate-950/40">${htmlProcessos}</div>
+        </details>`;
       }).join('');
     }
 
-    function aoAbrirProcesso(detailsEl, cleanId, numProcesso) {
-      if (detailsEl.open) {
-        carregarHistoricoInline(cleanId, numProcesso, false);
-      }
-    }
-
-    async function carregarHistoricoInline(cleanId, numProcesso, forcar = false) {
+    async function aoAbrirProcesso(detailsEl, cleanId, numProcesso) {
+      if (!detailsEl.open) return;
       const box = document.getElementById(`hist-inline-${cleanId}`);
-      if (!box) return;
-
-      if (!forcar && box.dataset.loaded === "true") return;
-
-      box.innerHTML = `<div class="text-center py-4 text-xs text-slate-400 animate-pulse">Carregando movimentações da planilha...</div>`;
+      if (box.dataset.loaded === "true") return;
 
       try {
-        const res = await apiRequest("movimentacoes", { processo: numProcesso });
-        if (res.success && res.data.length > 0) {
-          const ordenados = [...res.data].sort((a, b) => {
-            const dataA = a.dataMovimentacao ? new Date(a.dataMovimentacao).getTime() : 0;
-            const dataB = b.dataMovimentacao ? new Date(b.dataMovimentacao).getTime() : 0;
-            return dataB - dataA;
-          });
-
-          box.innerHTML = ordenados.map(m => `
-            <div class="border-l-2 border-blue-500 pl-3 py-1.5 space-y-1 bg-white dark:bg-slate-950/50 rounded-r-lg border border-slate-200/60 dark:border-slate-800/60 shadow-xs">
-              <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block font-mono">
-                📅 ${formatarDataHora(m.dataMovimentacao)}
-              </span>
-              <p class="text-xs text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">${m.atualizacao}</p>
-            </div>
-          `).join('');
+        const rows = await supabaseRequest(`movimentacoes?processo=eq.${encodeURIComponent(numProcesso)}&select=*&order=data_movimentacao.desc`);
+        if (rows && rows.length > 0) {
+          box.innerHTML = rows.map(m => `
+            <div class="border-l-2 border-blue-500 pl-3 py-1 bg-white dark:bg-slate-950 rounded-r-lg border border-slate-200 dark:border-slate-800 text-xs">
+              <span class="text-[10px] text-slate-500 font-mono">📅 ${formatarDataHora(m.data_movimentacao)}</span>
+              <p class="text-slate-800 dark:text-slate-200 mt-0.5">${m.atualizacao}</p>
+            </div>`).join('');
           box.dataset.loaded = "true";
         } else {
-          box.innerHTML = `<div class="text-center py-3 text-xs text-slate-500 italic">Nenhuma movimentação registrada na planilha ainda. Clique em '⚡ Atualizar' para buscar no DataJud.</div>`;
+          box.innerHTML = `<div class="text-center py-2 text-xs text-slate-500">Nenhuma movimentação registrada.</div>`;
           box.dataset.loaded = "true";
         }
-      } catch (err) {
-        box.innerHTML = `<div class="text-center py-3 text-xs text-red-500">Erro ao carregar movimentações.</div>`;
-      }
-    }
-
-    async function enviarEmailProcesso(numProcesso) {
-      if (!confirm(`Deseja enviar o relatório do processo ${numProcesso} por e-mail para os destinatários cadastrados?`)) return;
-
-      const cleanId = String(numProcesso).replace(/\D/g, '');
-      const btn = document.getElementById(`btn-email-${cleanId}`);
-      let htmlOriginal = "";
-
-      if (btn) {
-        htmlOriginal = btn.innerHTML;
-        btn.disabled = true;
-        btn.classList.add("opacity-70", "cursor-wait");
-        btn.innerHTML = `<span>⏳</span> <span>Enviando...</span>`;
-      }
-
-      try {
-        const res = await apiRequest("send_email_processo", { processo: numProcesso }, "POST");
-        if (res.success) {
-          alert(res.message || "E-mail enviado com sucesso!");
-        } else {
-          alert("Erro: " + (res.error || "Não foi possível enviar o e-mail."));
-        }
-      } catch (err) {
-        alert("Falha na conexão com a API.");
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.classList.remove("opacity-70", "cursor-wait");
-          btn.innerHTML = htmlOriginal;
-        }
+      } catch (e) {
+        box.innerHTML = `<div class="text-center py-2 text-xs text-red-500">Erro ao carregar movimentações.</div>`;
       }
     }
 
     async function sincronizarProcessoIndividual(numProcesso, tribunal) {
+      if (!API_URL) return alert("Configure a URL do Google Apps Script nas Configurações para realizar a consulta no DataJud.");
       const cleanId = String(numProcesso).replace(/\D/g, '');
       const btn = document.getElementById(`btn-sync-${cleanId}`);
-      let htmlOriginal = "";
-      
-      if (btn) {
-        htmlOriginal = btn.innerHTML;
-        btn.disabled = true;
-        btn.classList.add("opacity-70", "cursor-wait");
-        btn.innerHTML = `<span class="animate-spin inline-block">⚡</span> <span>Buscando...</span>`;
-      }
+      if (btn) btn.innerText = "Buscando...";
 
       try {
-        const res = await apiRequest("sync_processo", {
-          processo: numProcesso,
-          tribunal: tribunal
-        }, "POST");
+        const res = await fetch(`${API_URL}?action=sync_processo`, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "sync_processo", processo: numProcesso, tribunal })
+        }).then(r => r.json());
 
-        if (res.success) {
-          await carregarProcessos();
-        } else {
-          alert(`Erro ao consultar processo: ${res.error || 'Falha no DataJud'}`);
-        }
-      } catch (err) {
-        alert("Erro na requisição com o script.");
+        if (res.success) await carregarProcessos();
+        else alert("Erro: " + res.error);
+      } catch (e) {
+        alert("Falha ao conectar com o Apps Script.");
       } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.classList.remove("opacity-70", "cursor-wait");
-          btn.innerHTML = htmlOriginal;
-        }
+        if (btn) btn.innerText = "⚡ Atualizar";
+      }
+    }
+
+    async function enviarEmailProcesso(numProcesso) {
+      if (!API_URL) return alert("Configure a URL do Apps Script para disparar e-mails.");
+      if (!confirm("Deseja disparar o e-mail de alerta para este processo?")) return;
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "send_email_processo", processo: numProcesso })
+        }).then(r => r.json());
+        alert(res.message || res.error);
+      } catch (e) {
+        alert("Erro ao enviar e-mail.");
       }
     }
 
     async function sincronizarDataJud() {
-      if (!processosData || processosData.length === 0) {
-        alert("Nenhum processo carregado na lista para atualizar.");
-        return;
-      }
-
-      if (!confirm("Deseja iniciar a checagem de todos os processos em segundo plano na planilha? Você pode continuar usando o aplicativo normalmente.")) {
-        return;
-      }
-
-      const btn = document.getElementById("btnSideSync");
-      const icon = document.getElementById("sideSyncIcon");
-      const txt = document.getElementById("sideSyncText");
-
-      btn.disabled = true;
-      btn.classList.add("opacity-60", "cursor-not-allowed");
-      icon.classList.add("animate-spin");
-      if (txt) txt.innerText = "Iniciando...";
-
+      if (!API_URL) return alert("Configure a URL do Apps Script nas Configurações.");
+      if (!confirm("Iniciar verificação de todos os processos via Apps Script?")) return;
       try {
-        const res = await apiRequest("sync", {}, "POST");
-        if (res.success) {
-          alert("Sincronização iniciada com sucesso! O Google Sheets atualizará os dados e disparará os e-mails em segundo plano.");
-        } else {
-          alert("Erro: " + (res.error || "Falha ao iniciar"));
-        }
-      } catch (err) {
-        alert("Erro de conexão ao acionar a sincronização geral.");
-      } finally {
-        btn.disabled = false;
-        btn.classList.remove("opacity-60", "cursor-not-allowed");
-        icon.classList.remove("animate-spin");
-        if (txt) txt.innerText = "Checar DataJud (Todos)";
+        await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "sync" })
+        });
+        alert("Sincronização iniciada em segundo plano!");
+      } catch (e) {
+        alert("Erro ao acionar sincronização.");
       }
     }
 
     async function salvarProcesso(e) {
       e.preventDefault();
-      const mode = document.getElementById("formMode").value;
-      const btn = document.getElementById("btnSubmitForm");
-      btn.innerText = "Salvando...";
-      btn.disabled = true;
-
+      const processo = document.getElementById("campoProcesso").value.trim();
       const payload = {
         empresa: document.getElementById("campoEmpresa").value.trim(),
-        processo: document.getElementById("campoProcesso").value.trim(),
+        processo,
         apelido: document.getElementById("campoApelido").value.trim(),
         tribunal: document.getElementById("campoTribunal").value.trim(),
         tipo: document.getElementById("campoTipo").value,
@@ -1229,92 +881,36 @@
         status: document.getElementById("campoStatus").value
       };
 
-      try {
-        const res = await apiRequest(mode, payload, "POST");
-        if (res.success) {
-          closeProcessModal();
-          await carregarProcessos();
-        } else {
-          alert("Erro: " + res.error);
-        }
-      } catch (err) {
-        alert("Erro ao salvar processo.");
-      } finally {
-        btn.innerText = "Salvar";
-        btn.disabled = false;
-      }
+      await supabaseRequest("processos", "POST", payload, { "Prefer": "resolution=merge-duplicates" });
+      closeProcessModal();
+      await carregarProcessos();
     }
 
     async function excluirProcesso(numProcesso) {
-      if (!confirm(`Deseja realmente remover o processo ${numProcesso}?`)) return;
-      try {
-        const res = await apiRequest("delete", { processo: numProcesso }, "POST");
-        if (res.success) {
-          await carregarProcessos();
-        } else {
-          alert("Erro ao excluir: " + res.error);
-        }
-      } catch (err) {
-        alert("Erro na requisição.");
-      }
-    }
-
-    function extrairTribunalETipo(processo) {
-      const digitos = processo.replace(/\D/g, "");
-      if (digitos.length < 16) return { tribunal: "", tipo: "" };
-
-      const j = digitos.substring(13, 14);
-      const tr = digitos.substring(14, 16);
-      let tribunal = "";
-      let tipo = "Cível";
-
-      if (j === "1") tribunal = "STF";
-      if (j === "2") tribunal = "CNJ";
-      if (j === "3") tribunal = "STJ";
-      if (j === "4") tribunal = `TRF${parseInt(tr, 10)}`;
-      if (j === "5") {
-        tribunal = `TRT${parseInt(tr, 10)}`;
-        tipo = "Trabalhista";
-      }
-      if (j === "6") {
-        tribunal = tr === "00" ? "TSE" : `TRE-${tr}`;
-        tipo = "Eleitoral";
-      }
-      if (j === "7") tribunal = "STM";
-
-      if (j === "8") {
-        const tjs = {
-          "01": "TJAC", "02": "TJAL", "03": "TJAP", "04": "TJAM",
-          "05": "TJBA", "06": "TJCE", "07": "TJDFT", "08": "TJES",
-          "09": "TJGO", "10": "TJMA", "11": "TJMT", "12": "TJMS",
-          "13": "TJMG", "14": "TJPA", "15": "TJPB", "16": "TJPR",
-          "17": "TJPE", "18": "TJPI", "19": "TJRJ", "20": "TJRN",
-          "21": "TJRS", "22": "TJRO", "23": "TJRR", "24": "TJSC",
-          "25": "TJSE", "26": "TJSP", "27": "TJTO"
-        };
-        tribunal = tjs[tr] || `TJ-${tr}`;
-      }
-      if (j === "9") tribunal = "TJM";
-
-      return { tribunal, tipo };
+      if (!confirm(`Excluir processo ${numProcesso}?`)) return;
+      await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "DELETE");
+      await carregarProcessos();
     }
 
     function aoDigitarProcesso(valor) {
-      const { tribunal, tipo } = extrairTribunalETipo(valor);
-      if (tribunal) document.getElementById("campoTribunal").value = tribunal;
-      if (tipo) document.getElementById("campoTipo").value = tipo;
+      const digitos = valor.replace(/\D/g, "");
+      if (digitos.length >= 16) {
+        const j = digitos.substring(13, 14), tr = digitos.substring(14, 16);
+        if (j === "8") {
+          const tjs = { "06": "TJCE", "26": "TJSP", "13": "TJMG", "19": "TJRJ", "21": "TJRS", "16": "TJPR", "17": "TJPE", "05": "TJBA" };
+          document.getElementById("campoTribunal").value = tjs[tr] || `TJ-${tr}`;
+        }
+      }
     }
 
     function openProcessModal() {
       document.getElementById("processForm").reset();
-      document.getElementById("formMode").value = "add";
       document.getElementById("modalTitle").innerText = "Novo Processo";
       document.getElementById("campoProcesso").readOnly = false;
       document.getElementById("processModal").classList.remove("hidden");
     }
 
     function abrirEditar(p) {
-      document.getElementById("formMode").value = "edit";
       document.getElementById("modalTitle").innerText = "Editar Processo";
       document.getElementById("campoProcesso").value = p.processo;
       document.getElementById("campoProcesso").readOnly = true;
@@ -1330,30 +926,20 @@
       document.getElementById("processModal").classList.remove("hidden");
     }
 
-    function closeProcessModal() {
-      document.getElementById("processModal").classList.add("hidden");
-    }
-
+    function closeProcessModal() { document.getElementById("processModal").classList.add("hidden"); }
     function openEmpresaModal() {
       document.getElementById("empresaForm").reset();
       limparLogoForm();
       document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
       document.getElementById("empresaModal").classList.remove("hidden");
     }
-
-    function closeEmpresaModal() {
-      document.getElementById("empresaModal").classList.add("hidden");
-    }
-
+    function closeEmpresaModal() { document.getElementById("empresasListaContainer").innerHTML = ""; document.getElementById("empresaModal").classList.add("hidden"); }
     function openConfigModal() {
-      document.getElementById("apiUrlInput").value = API_URL === "SUA_URL_DO_WEBAPP_AQUI" ? "" : API_URL;
+      document.getElementById("apiUrlInput").value = API_URL;
       aplicarTema(CONFIG_GLOBAL.app_theme || "dark");
       document.getElementById("configModal").classList.remove("hidden");
     }
-
-    function closeConfigModal() {
-      document.getElementById("configModal").classList.add("hidden");
-    }
+    function closeConfigModal() { document.getElementById("configModal").classList.add("hidden"); }
   </script>
 </body>
 </html>
