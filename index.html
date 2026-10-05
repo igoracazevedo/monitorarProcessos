@@ -877,21 +877,110 @@
       }
     }
 
-    async function sincronizarDataJud() {
-      if (!API_URL) return alert("Configure a URL do Apps Script nas Configurações.");
-      if (!confirm("Iniciar verificação de todos os processos via Apps Script?")) return;
-      try {
-        await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "sync" })
-        });
-        alert("Sincronização iniciada em segundo plano!");
-      } catch (e) {
-        alert("Erro ao acionar sincronização.");
-      }
+    function adicionarLogSync(mensagem, tipo = "info") {
+      const box = document.getElementById("syncLogBox");
+      if (!box) return;
+      let cor = "text-emerald-400";
+      if (tipo === "error") cor = "text-rose-400";
+      if (tipo === "warn") cor = "text-amber-400";
+      if (tipo === "success") cor = "text-cyan-400 font-bold";
+
+      box.innerHTML += `<div class="${cor}">[${new Date().toLocaleTimeString()}] ${mensagem}</div>`;
+      box.scrollTop = box.scrollHeight;
     }
 
+    function fecharSyncModal() {
+      document.getElementById("syncModal").classList.add("hidden");
+      carregarProcessos();
+    }
+
+    async function sincronizarDataJud() {
+      if (!processosData || processosData.length === 0) {
+        alert("Não há processos cadastrados para sincronizar.");
+        return;
+      }
+
+      // Abre o modal de progresso
+      document.getElementById("syncModal").classList.remove("hidden");
+      document.getElementById("btnCloseSyncModal").classList.add("hidden");
+      const btnConcluir = document.getElementById("btnConcluirSync");
+      btnConcluir.disabled = true;
+      btnConcluir.className = "px-4 py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg text-sm font-medium cursor-not-allowed transition";
+
+      const logBox = document.getElementById("syncLogBox");
+      logBox.innerHTML = `<div class="text-slate-500">[Sistema] Iniciando verificação de ${processosData.length} processos...</div>`;
+      
+      let concluidos = 0;
+      let atualizados = 0;
+      const total = processosData.length;
+
+      for (let p of processosData) {
+        const numProcesso = p.processo;
+        const tribunal = p.tribunal || "TJSP";
+        const apelido = p.apelido || numProcesso;
+
+        adicionarLogSync(`Consultando: ${apelido} (${numProcesso})...`);
+
+        try {
+          const numeroLimpo = String(numProcesso).replace(/\D/g, "");
+          const siglaTribunal = String(tribunal).toLowerCase().replace(/[^a-z0-9]/g, "");
+          const endpointDataJud = `https://api-publica.datajud.cnj.jus.br/api_publica_${siglaTribunal}/_search`;
+
+          const payload = {
+            query: { match: { numeroProcesso: numeroLimpo } },
+            sort: [{ "dataHoraUltimaAtualizacao": { "order": "desc" } }]
+          };
+
+          const res = await fetch(endpointDataJud, {
+            method: "POST",
+            headers: {
+              "Authorization": "APIKey cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==",
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            const json = await res.json();
+            if (json.hits && json.hits.hits.length > 0) {
+              const doc = json.hits.hits[0]._source;
+              const ultimaMov = doc.movimentos && doc.movimentos.length > 0 ? doc.movimentos[0].dataHora : null;
+
+              if (ultimaMov && (!p.ultimaData || new Date(ultimaMov).getTime() > new Date(p.ultimaData).getTime())) {
+                await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", {
+                  ultima_data: ultimaMov
+                });
+                adicionarLogSync(`✔ Atualizado com sucesso: ${apelido}`, "success");
+                atualizados++;
+              } else {
+                adicionarLogSync(`Nenhuma nova movimentação para ${apelido}.`);
+              }
+            } else {
+              adicionarLogSync(`Processo não encontrado no DataJud para ${tribunal}.`, "warn");
+            }
+          } else {
+            adicionarLogSync(`Erro HTTP ${res.status} ao consultar ${tribunal}.`, "error");
+          }
+        } catch (err) {
+          adicionarLogSync(`Falha na consulta de ${apelido}: ${err.message}`, "error");
+        }
+
+        concluidos++;
+        const percent = Math.round((concluidos / total) * 100);
+        document.getElementById("syncProgressBar").style.width = `${percent}%`;
+        document.getElementById("syncProgressText").innerText = `${concluidos} / ${total} concluídos`;
+        document.getElementById("syncPercentText").innerText = `${percent}%`;
+
+        // Pausa breve para não sobrecarregar a API pública
+        await new Promise(r => setTimeout(r, 300));
+      }
+
+      adicionarLogSync(`Sincronização finalizada! Total atualizados: ${atualizados}`, "success");
+      document.getElementById("syncStatusSubtitle").innerText = "Sincronização concluída com sucesso!";
+      document.getElementById("btnCloseSyncModal").classList.remove("hidden");
+      btnConcluir.disabled = false;
+      btnConcluir.className = "px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium shadow transition cursor-pointer";
+    }
     async function salvarProcesso(e) {
       e.preventDefault();
       const processo = document.getElementById("campoProcesso").value.trim();
@@ -968,5 +1057,40 @@
     }
     function closeConfigModal() { document.getElementById("configModal").classList.add("hidden"); }
   </script>
+  <!-- MODAL DE PROGRESSO E LOGS DA SINCRONIZAÇÃO -->
+<div id="syncModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-2xl p-5 shadow-2xl space-y-4">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+      <div>
+        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Sincronizando Processos</h3>
+        <p id="syncStatusSubtitle" class="text-xs text-slate-500 dark:text-slate-400">Aguarde enquanto consultamos o DataJud...</p>
+      </div>
+      <button id="btnCloseSyncModal" onclick="fecharSyncModal()" class="hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1">✕</button>
+    </div>
+
+    <!-- Barra de Progresso -->
+    <div class="space-y-1.5">
+      <div class="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
+        <span id="syncProgressText">0 / 0 concluídos</span>
+        <span id="syncPercentText">0%</span>
+      </div>
+      <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+        <div id="syncProgressBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- Caixa de Log em Tempo Real -->
+    <div>
+      <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Log de Atualizações</label>
+      <div id="syncLogBox" class="w-full h-44 bg-slate-950 text-emerald-400 font-mono text-[11px] p-3 rounded-lg overflow-y-auto space-y-1 border border-slate-800">
+        <div class="text-slate-500">[Sistema] Inicializando sincronização com o Supabase e DataJud...</div>
+      </div>
+    </div>
+
+    <div class="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
+      <button id="btnConcluirSync" disabled onclick="fecharSyncModal()" class="px-4 py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg text-sm font-medium cursor-not-allowed transition">Fechar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
