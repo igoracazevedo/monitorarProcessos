@@ -683,13 +683,27 @@
     }
 
     function obterProcessosFiltrados() {
-      const query = (document.getElementById("searchInput").value || "").toLowerCase();
+      const query = (document.getElementById("searchInput").value || "").toLowerCase().trim();
+      const queryLimpa = query.replace(/\D/g, ""); // Remove tudo que não é número
       const empresaFiltro = document.getElementById("empresaFilter").value;
+
       return processosData.filter(p => {
         const matchesEmpresa = !empresaFiltro || String(p.empresa || '').trim() === String(empresaFiltro).trim();
         const nomeEmp = obterNomeEmpresa(p.empresa).toLowerCase();
-        const matchesQuery = (p.processo || '').toLowerCase().includes(query) || (p.apelido || '').toLowerCase().includes(query) || (p.tribunal || '').toLowerCase().includes(query) || (p.reclamante || '').toLowerCase().includes(query) || (p.reclamado || '').toLowerCase().includes(query) || (p.vara || '').toLowerCase().includes(query) || nomeEmp.includes(query);
-        return matchesEmpresa && matchesQuery;
+
+        const numOriginal = (p.processo || "").toLowerCase();
+        const numLimpo = (p.processo || "").replace(/\D/g, "");
+
+        // Verifica se bate com o número original, com os números puros, apelido, tribunal, partes ou empresa
+        const matchNumero = numOriginal.includes(query) || (queryLimpa.length > 0 && numLimpo.includes(queryLimpa));
+        const matchTexto = (p.apelido || "").toLowerCase().includes(query) || 
+                           (p.tribunal || "").toLowerCase().includes(query) || 
+                           (p.reclamante || "").toLowerCase().includes(query) || 
+                           (p.reclamado || "").toLowerCase().includes(query) || 
+                           (p.vara || "").toLowerCase().includes(query) || 
+                           nomeEmp.includes(query);
+
+        return matchesEmpresa && (matchNumero || matchTexto);
       });
     }
 
