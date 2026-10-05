@@ -908,75 +908,45 @@
       btnConcluir.className = "px-4 py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg text-sm font-medium cursor-not-allowed transition";
 
       const logBox = document.getElementById("syncLogBox");
-      logBox.innerHTML = `<div class="text-slate-500">[Sistema] Iniciando verificação de ${processosData.length} processos...</div>`;
+      logBox.innerHTML = `<div class="text-slate-500">[Sistema] Acionando Edge Function no Supabase...</div>`;
       
-      let concluidos = 0;
       let atualizados = 0;
       const total = processosData.length;
 
-      for (let p of processosData) {
-        const numProcesso = p.processo;
-        const tribunal = p.tribunal || "TJSP";
-        const apelido = p.apelido || numProcesso;
+      document.getElementById("syncProgressBar").style.width = `50%`;
+      document.getElementById("syncProgressText").innerText = `Processando ${total} processos...`;
+      document.getElementById("syncPercentText").innerText = `50%`;
 
-        adicionarLogSync(`Consultando: ${apelido} (${numProcesso})...`);
+      try {
+        adicionarLogSync("Enviando requisição em lote para o Supabase...");
 
-        try {
-          const numeroLimpo = String(numProcesso).replace(/\D/g, "");
-          const siglaTribunal = String(tribunal).toLowerCase().replace(/[^a-z0-9]/g, "");
-          const endpointDataJud = `https://api-publica.datajud.cnj.jus.br/api_publica_${siglaTribunal}/_search`;
-
-          const payload = {
-            query: { match: { numeroProcesso: numeroLimpo } },
-            sort: [{ "dataHoraUltimaAtualizacao": { "order": "desc" } }]
-          };
-
-          const res = await fetch(endpointDataJud, {
-            method: "POST",
-            headers: {
-              "Authorization": "APIKey cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==",
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-          });
-
-          if (res.ok) {
-            const json = await res.json();
-            if (json.hits && json.hits.hits.length > 0) {
-              const doc = json.hits.hits[0]._source;
-              const ultimaMov = doc.movimentos && doc.movimentos.length > 0 ? doc.movimentos[0].dataHora : null;
-
-              if (ultimaMov && (!p.ultimaData || new Date(ultimaMov).getTime() > new Date(p.ultimaData).getTime())) {
-                await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", {
-                  ultima_data: ultimaMov
-                });
-                adicionarLogSync(`✔ Atualizado com sucesso: ${apelido}`, "success");
-                atualizados++;
-              } else {
-                adicionarLogSync(`Nenhuma nova movimentação para ${apelido}.`);
-              }
-            } else {
-              adicionarLogSync(`Processo não encontrado no DataJud para ${tribunal}.`, "warn");
-            }
-          } else {
-            adicionarLogSync(`Erro HTTP ${res.status} ao consultar ${tribunal}.`, "error");
+        // Chama a Edge Function que criamos no Supabase
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/sincronizar-datajud`, {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_PUBLISHABLE_KEY,
+            "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+            "Content-Type": "application/json"
           }
-        } catch (err) {
-          adicionarLogSync(`Falha na consulta de ${apelido}: ${err.message}`, "error");
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Erro na Edge Function [${res.status}]: ${errText}`);
         }
 
-        concluidos++;
-        const percent = Math.round((concluidos / total) * 100);
-        document.getElementById("syncProgressBar").style.width = `${percent}%`;
-        document.getElementById("syncProgressText").innerText = `${concluidos} / ${total} concluídos`;
-        document.getElementById("syncPercentText").innerText = `${percent}%`;
+        const json = await res.json();
+        atualizados = json.processosAtualizados || 0;
 
-        // Pausa breve para não sobrecarregar a API pública
-        await new Promise(r => setTimeout(r, 300));
+        adicionarLogSync(`✔ Sincronização concluída com sucesso! Processos atualizados: ${atualizados}`, "success");
+        document.getElementById("syncProgressBar").style.width = `100%`;
+        document.getElementById("syncProgressText").innerText = `${total} / ${total} concluídos`;
+        document.getElementById("syncPercentText").innerText = `100%`;
+      } catch (err) {
+        adicionarLogSync(`Falha na sincronização: ${err.message}`, "error");
       }
 
-      adicionarLogSync(`Sincronização finalizada! Total atualizados: ${atualizados}`, "success");
-      document.getElementById("syncStatusSubtitle").innerText = "Sincronização concluída com sucesso!";
+      document.getElementById("syncStatusSubtitle").innerText = "Sincronização concluída!";
       document.getElementById("btnCloseSyncModal").classList.remove("hidden");
       btnConcluir.disabled = false;
       btnConcluir.className = "px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium shadow transition cursor-pointer";
