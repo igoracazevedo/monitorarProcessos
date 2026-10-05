@@ -900,6 +900,9 @@
         return;
       }
 
+      // URL do Web App do Apps Script que você acabou de publicar
+      const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx20HclldVX0ee7_6CEaVl7qkHonkFbgAC_K-REepBnmetFKNbcracWpPhw9CxV3LcD/exec";
+
       document.getElementById("syncModal").classList.remove("hidden");
       document.getElementById("btnCloseSyncModal").classList.add("hidden");
       const btnConcluir = document.getElementById("btnConcluirSync");
@@ -907,7 +910,7 @@
       btnConcluir.className = "px-4 py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg text-sm font-medium cursor-not-allowed transition";
 
       const logBox = document.getElementById("syncLogBox");
-      logBox.innerHTML = `<div class="text-slate-500">[Sistema] Iniciando verificação de ${processosData.length} processos...</div>`;
+      logBox.innerHTML = `<div class="text-slate-500">[Sistema] Iniciando verificação de ${processosData.length} processos via Apps Script...</div>`;
       
       let concluidos = 0;
       let atualizados = 0;
@@ -921,47 +924,33 @@
         adicionarLogSync(`Consultando: ${apelido} (${numProcesso})...`);
 
         try {
-          const numeroLimpo = String(numProcesso).replace(/\D/g, "");
-          const siglaTribunal = String(tribunal).toLowerCase().replace(/[^a-z0-9]/g, "");
-          
-          // URL do DataJud com o proxy CORS integrado para liberar o navegador
-          const targetUrl = `https://api-publica.datajud.cnj.jus.br/api_publica_${siglaTribunal}/_search`;
-          const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(targetUrl);
-
-          const payload = {
-            query: { match: { numeroProcesso: numeroLimpo } },
-            sort: [{ "dataHoraUltimaAtualizacao": { "order": "desc" } }]
-          };
-
-          const res = await fetch(proxyUrl, {
+          const res = await fetch(APPS_SCRIPT_URL, {
             method: "POST",
-            headers: {
-              "Authorization": "APIKey cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==",
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              action: "consultar_datajud",
+              processo: numProcesso,
+              tribunal: tribunal
+            })
           });
 
-          if (res.ok) {
-            const json = await res.json();
-            if (json.hits && json.hits.hits.length > 0) {
-              const doc = json.hits.hits[0]._source;
-              const ultimaMov = doc.movimentos && doc.movimentos.length > 0 ? doc.movimentos[0].dataHora : null;
+          const json = await res.json();
 
-              if (ultimaMov && (!p.ultimaData || new Date(ultimaMov).getTime() > new Date(p.ultimaData).getTime())) {
-                await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", {
-                  ultima_data: ultimaMov
-                });
-                adicionarLogSync(`✔ Atualizado com sucesso: ${apelido}`, "success");
-                atualizados++;
-              } else {
-                adicionarLogSync(`Nenhuma nova movimentação para ${apelido}.`);
-              }
+          if (json.success && json.data) {
+            const ultimaMov = json.data.ultimaData;
+
+            if (ultimaMov && (!p.ultimaData || new Date(ultimaMov).getTime() > new Date(p.ultimaData).getTime())) {
+              // Atualiza direto no Supabase
+              await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", {
+                ultima_data: ultimaMov
+              });
+              adicionarLogSync(`✔ Atualizado com sucesso: ${apelido}`, "success");
+              atualizados++;
             } else {
-              adicionarLogSync(`Processo não encontrado no DataJud para ${tribunal}.`, "warn");
+              adicionarLogSync(`Nenhuma nova movimentação para ${apelido}.`);
             }
           } else {
-            adicionarLogSync(`Erro HTTP ${res.status} ao consultar ${tribunal}.`, "error");
+            adicionarLogSync(`Processo não retornado pelo DataJud para ${tribunal}.`, "warn");
           }
         } catch (err) {
           adicionarLogSync(`Falha na consulta de ${apelido}: ${err.message}`, "error");
