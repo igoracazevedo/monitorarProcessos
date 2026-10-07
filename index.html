@@ -358,12 +358,13 @@
   </div>
 
   <script>    
-   // Configurações do Supabase (Apenas Chave Pública / Publishable)
+    // Configurações do Supabase (Apenas Chave Pública / Publishable)
     const SUPABASE_URL = "https://kslmyvlewsmjnrhwklfd.supabase.co";
-    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_WjgE2b2iKdZrRopbQieW3A_Cr9R9pGB"; // Chave pública segura para o GitHub
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_WjgE2b2iKdZrRopbQieW3A_Cr9R9pGB"; // Chave pública segura para el GitHub
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx20HclldVX0ee7_6CEaVl7qkHonkFbgAC_K-REepBnmetFKNbcracWpPhw9CxV3LcD/exec";
     
-    let API_URL = localStorage.getItem("PROCESSOS_API_URL") || "";
-    let CONFIG_GLOBAL = { app_theme: "dark", api_url: "" };
+    let API_URL = localStorage.getItem("PROCESSOS_API_URL") || APPS_SCRIPT_URL;
+    let CONFIG_GLOBAL = { app_theme: "dark", api_url: APPS_SCRIPT_URL };
     let processosData = [];
     let empresasData = [];
     let logoTempBase64 = "";
@@ -684,7 +685,7 @@
 
     function obterProcessosFiltrados() {
       const query = (document.getElementById("searchInput").value || "").toLowerCase().trim();
-      const queryLimpa = query.replace(/\D/g, ""); // Remove tudo que não é número
+      const queryLimpa = query.replace(/\D/g, "");
       const empresaFiltro = document.getElementById("empresaFilter").value;
 
       return processosData.filter(p => {
@@ -694,7 +695,6 @@
         const numOriginal = (p.processo || "").toLowerCase();
         const numLimpo = (p.processo || "").replace(/\D/g, "");
 
-        // Verifica se bate com o número original, com os números puros, apelido, tribunal, partes ou empresa
         const matchNumero = numOriginal.includes(query) || (queryLimpa.length > 0 && numLimpo.includes(queryLimpa));
         const matchTexto = (p.apelido || "").toLowerCase().includes(query) || 
                            (p.tribunal || "").toLowerCase().includes(query) || 
@@ -833,41 +833,43 @@
       if (btn) btn.innerText = "Buscando...";
 
       try {
-        // Remove a dependência do Apps Script e faz a chamada direta ao DataJud (ou simula a atualização)
-        const numeroLimpo = String(numProcesso).replace(/\D/g, "");
-        const siglaTribunal = String(tribunal || "TJSP").toLowerCase().replace(/[^a-z0-9]/g, "");
-        const endpointDataJud = `https://api-publica.datajud.cnj.jus.br/api_publica_${siglaTribunal}/_search`;
-
-        const payload = {
-          query: { match: { numeroProcesso: numeroLimpo } },
-          sort: [{ "dataHoraUltimaAtualizacao": { "order": "desc" } }]
-        };
-
-        const res = await fetch(endpointDataJud, {
+        const res = await fetch(API_URL, {
           method: "POST",
-          headers: {
-            "Authorization": "APIKey cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==",
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "consultar_datajud",
+            processo: numProcesso,
+            tribunal: tribunal
+          })
         });
 
-        if (!res.ok) throw new Error("Tribunal indisponível no momento.");
-
         const json = await res.json();
-        if (json.hits && json.hits.hits.length > 0) {
-          const doc = json.hits.hits[0]._source;
-          const ultimaMov = doc.movimentos && doc.movimentos.length > 0 ? doc.movimentos[0].dataHora : new Date().toISOString();
 
-          // Atualiza direto no Supabase
-          await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", {
-            ultima_data: ultimaMov
-          });
+        if (json.success && json.data) {
+          const dadosProcesso = json.data;
+          const ultimaMovData = dadosProcesso.ultimaData;
 
-          alert("Processo sincronizado com sucesso!");
-          await carregarProcessos();
+          if (ultimaMovData) {
+            await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", {
+              ultima_data: ultimaMovData
+            });
+
+            if (dadosProcesso.movimentos && dadosProcesso.movimentos.length > 0) {
+              const ultimaMovObj = dadosProcesso.movimentos[0];
+              await supabaseRequest("movimentacoes", "POST", {
+                processo: numProcesso,
+                data_movimentacao: ultimaMovObj.dataHora,
+                atualizacao: ultimaMovObj.nome || ultimaMovObj.descricao || "Movimentação registrada"
+              }, { "Prefer": "resolution=merge-duplicates" }).catch(() => {});
+            }
+
+            alert("Processo sincronizado e atualizado com sucesso!");
+            await carregarProcessos();
+          } else {
+            alert("Nenhuma movimentação encontrada para este processo.");
+          }
         } else {
-          alert("Processo não encontrado na base pública do DataJud.");
+          alert("Processo não retornado pelo DataJud para este tribunal.");
         }
       } catch (e) {
         alert("Erro ao consultar DataJud: " + e.message);
@@ -914,9 +916,6 @@
         return;
       }
 
-      // URL do Web App do Apps Script que você acabou de publicar
-      const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx20HclldVX0ee7_6CEaVl7qkHonkFbgAC_K-REepBnmetFKNbcracWpPhw9CxV3LcD/exec";
-
       document.getElementById("syncModal").classList.remove("hidden");
       document.getElementById("btnCloseSyncModal").classList.add("hidden");
       const btnConcluir = document.getElementById("btnConcluirSync");
@@ -938,7 +937,7 @@
         adicionarLogSync(`Consultando: ${apelido} (${numProcesso})...`);
 
         try {
-          const res = await fetch(APPS_SCRIPT_URL, {
+          const res = await fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({
@@ -951,13 +950,23 @@
           const json = await res.json();
 
           if (json.success && json.data) {
-            const ultimaMov = json.data.ultimaData;
+            const dadosProcesso = json.data;
+            const ultimaMov = dadosProcesso.ultimaData;
 
             if (ultimaMov && (!p.ultimaData || new Date(ultimaMov).getTime() > new Date(p.ultimaData).getTime())) {
-              // Atualiza direto no Supabase
               await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", {
                 ultima_data: ultimaMov
               });
+
+              if (dadosProcesso.movimentos && dadosProcesso.movimentos.length > 0) {
+                const ultimaMovObj = dadosProcesso.movimentos[0];
+                await supabaseRequest("movimentacoes", "POST", {
+                  processo: numProcesso,
+                  data_movimentacao: ultimaMovObj.dataHora,
+                  atualizacao: ultimaMovObj.nome || ultimaMovObj.descricao || "Movimentação registrada"
+                }, { "Prefer": "resolution=merge-duplicates" }).catch(() => {});
+              }
+
               adicionarLogSync(`✔ Atualizado com sucesso: ${apelido}`, "success");
               atualizados++;
             } else {
@@ -985,6 +994,7 @@
       btnConcluir.disabled = false;
       btnConcluir.className = "px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium shadow transition cursor-pointer";
     }
+
     async function salvarProcesso(e) {
       e.preventDefault();
       const processo = document.getElementById("campoProcesso").value.trim();
@@ -1061,40 +1071,41 @@
     }
     function closeConfigModal() { document.getElementById("configModal").classList.add("hidden"); }
   </script>
+
   <!-- MODAL DE PROGRESSO E LOGS DA SINCRONIZAÇÃO -->
-<div id="syncModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-2xl p-5 shadow-2xl space-y-4">
-    <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+  <div id="syncModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Sincronizando Processos</h3>
+          <p id="syncStatusSubtitle" class="text-xs text-slate-500 dark:text-slate-400">Aguarde enquanto consultamos o DataJud...</p>
+        </div>
+        <button id="btnCloseSyncModal" onclick="fecharSyncModal()" class="hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1">✕</button>
+      </div>
+
+      <!-- Barra de Progresso -->
+      <div class="space-y-1.5">
+        <div class="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
+          <span id="syncProgressText">0 / 0 concluídos</span>
+          <span id="syncPercentText">0%</span>
+        </div>
+        <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+          <div id="syncProgressBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Caixa de Log em Tempo Real -->
       <div>
-        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Sincronizando Processos</h3>
-        <p id="syncStatusSubtitle" class="text-xs text-slate-500 dark:text-slate-400">Aguarde enquanto consultamos o DataJud...</p>
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Log de Atualizações</label>
+        <div id="syncLogBox" class="w-full h-44 bg-slate-950 text-emerald-400 font-mono text-[11px] p-3 rounded-lg overflow-y-auto space-y-1 border border-slate-800">
+          <div class="text-slate-500">[Sistema] Inicializando sincronização com o Supabase e DataJud...</div>
+        </div>
       </div>
-      <button id="btnCloseSyncModal" onclick="fecharSyncModal()" class="hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1">✕</button>
-    </div>
 
-    <!-- Barra de Progresso -->
-    <div class="space-y-1.5">
-      <div class="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
-        <span id="syncProgressText">0 / 0 concluídos</span>
-        <span id="syncPercentText">0%</span>
+      <div class="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
+        <button id="btnConcluirSync" disabled onclick="fecharSyncModal()" class="px-4 py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg text-sm font-medium cursor-not-allowed transition">Fechar</button>
       </div>
-      <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
-        <div id="syncProgressBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-      </div>
-    </div>
-
-    <!-- Caixa de Log em Tempo Real -->
-    <div>
-      <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Log de Atualizações</label>
-      <div id="syncLogBox" class="w-full h-44 bg-slate-950 text-emerald-400 font-mono text-[11px] p-3 rounded-lg overflow-y-auto space-y-1 border border-slate-800">
-        <div class="text-slate-500">[Sistema] Inicializando sincronização com o Supabase e DataJud...</div>
-      </div>
-    </div>
-
-    <div class="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
-      <button id="btnConcluirSync" disabled onclick="fecharSyncModal()" class="px-4 py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg text-sm font-medium cursor-not-allowed transition">Fechar</button>
     </div>
   </div>
-</div>
 </body>
 </html>
