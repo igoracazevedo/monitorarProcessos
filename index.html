@@ -818,21 +818,25 @@
       const box = document.getElementById(`hist-inline-${cleanId}`);
       if (box.dataset.loaded === "true") return;
 
+      box.innerHTML = `<div class="text-center py-3 text-xs text-slate-500">Carregando histórico do Supabase...</div>`;
+
       try {
         const rows = await supabaseRequest(`movimentacoes?processo=eq.${encodeURIComponent(numProcesso)}&select=*&order=data_movimentacao.desc`);
         if (rows && rows.length > 0) {
           box.innerHTML = rows.map(m => `
-            <div class="border-l-2 border-blue-500 pl-3 py-1 bg-white dark:bg-slate-950 rounded-r-lg border border-slate-200 dark:border-slate-800 text-xs">
-              <span class="text-[10px] text-slate-500 font-mono">📅 ${formatarDataHora(m.data_movimentacao)}</span>
-              <p class="text-slate-800 dark:text-slate-200 mt-0.5">${m.atualizacao}</p>
+            <div class="border-l-2 border-blue-500 pl-3 py-2 bg-white dark:bg-slate-950 rounded-r-lg border border-slate-200 dark:border-slate-800 text-xs shadow-sm">
+              <div class="flex items-center justify-between text-[10px] text-slate-500 font-mono mb-1">
+                <span>📅 ${formatarDataHora(m.data_movimentacao)}</span>
+              </div>
+              <p class="text-slate-800 dark:text-slate-200 font-medium leading-relaxed">${m.atualizacao}</p>
             </div>`).join('');
           box.dataset.loaded = "true";
         } else {
-          box.innerHTML = `<div class="text-center py-2 text-xs text-slate-500">Nenhuma movimentação registrada.</div>`;
+          box.innerHTML = `<div class="text-center py-3 text-xs text-slate-400">Nenhuma movimentação registrada no banco. Clique em "Atualizar" para sincronizar do DataJud.</div>`;
           box.dataset.loaded = "true";
         }
       } catch (e) {
-        box.innerHTML = `<div class="text-center py-2 text-xs text-red-500">Erro ao carregar movimentações.</div>`;
+        box.innerHTML = `<div class="text-center py-3 text-xs text-rose-500">Erro ao carregar movimentações do Supabase.</div>`;
       }
     }
 
