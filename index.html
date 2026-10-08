@@ -850,20 +850,23 @@
           const ultimaMovData = dadosProcesso.ultimaData;
 
           if (ultimaMovData) {
+            // 1. Atualiza a data da última movimentação na tabela processos
             await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", {
               ultima_data: ultimaMovData
             });
 
+            // 2. Insere TODAS as movimentações retornadas no histórico
             if (dadosProcesso.movimentos && dadosProcesso.movimentos.length > 0) {
-              const ultimaMovObj = dadosProcesso.movimentos[0];
-              await supabaseRequest("movimentacoes", "POST", {
-                processo: numProcesso,
-                data_movimentacao: ultimaMovObj.dataHora,
-                atualizacao: ultimaMovObj.nome || ultimaMovObj.descricao || "Movimentação registrada"
-              }, { "Prefer": "resolution=merge-duplicates" }).catch(() => {});
+              for (let m of dadosProcesso.movimentos) {
+                await supabaseRequest("movimentacoes", "POST", {
+                  processo: numProcesso,
+                  data_movimentacao: m.dataHora,
+                  atualizacao: m.nome || m.descricao || "Movimentação registrada"
+                }, { "Prefer": "resolution=merge-duplicates" }).catch(() => {});
+              }
             }
 
-            alert("Processo sincronizado e atualizado com sucesso!");
+            alert("Processo sincronizado e histórico completo atualizado com sucesso!");
             await carregarProcessos();
           } else {
             alert("Nenhuma movimentação encontrada para este processo.");
@@ -877,7 +880,6 @@
         if (btn) btn.innerText = "⚡ Atualizar";
       }
     }
-
     async function enviarEmailProcesso(numProcesso) {
       if (!API_URL) return alert("Configure a URL do Apps Script para disparar e-mails.");
       if (!confirm("Deseja disparar o e-mail de alerta para este processo?")) return;
