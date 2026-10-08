@@ -847,10 +847,14 @@
 
         if (json.success && json.data) {
           const dadosProcesso = json.data;
-          const ultimaMovData = dadosProcesso.ultimaData;
+
+          // Pega explicitamente a data do movimento mais recente (primeiro elemento da lista ordenada)
+          const ultimaMovData = (dadosProcesso.movimentos && dadosProcesso.movimentos.length > 0) 
+                                ? dadosProcesso.movimentos[0].dataHora 
+                                : dadosProcesso.ultimaData;
 
           if (ultimaMovData) {
-            // 1. Atualiza a data da última movimentação na tabela processos
+            // 1. Atualiza a data da última movimentação na tabela processos com a data mais recente correta
             await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", {
               ultima_data: ultimaMovData
             });
