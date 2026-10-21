@@ -722,18 +722,36 @@
     function obterLinksTribunal(numProcesso, tribunal) {
       const d = String(numProcesso).replace(/\D/g, "");
       const links = [];
+
+      // Identifica sigla do tribunal se não estiver explícita
+      let sigla = String(tribunal || "").toUpperCase().trim();
+
       if (d.length !== 20) {
-        links.push({ nome: "Portal CNJ (Comunicações)", url: `https://comunica.pje.jus.br/consulta?numeroUnico=${d}` });
+        const cnjFallback = sigla 
+          ? `https://comunica.pje.jus.br/consulta?siglaTribunal=${sigla}&numeroProcesso=${d}` 
+          : `https://comunica.pje.jus.br/consulta?numeroProcesso=${d}`;
+        links.push({ nome: "Portal CNJ (Comunicações)", url: cnjFallback });
         return links;
       }
 
-      // Estrutura CNJ: NNNNNNN-DD.AAAA.J.TR.OOOO (o tribunal real vem do próprio número)
+      // Estrutura CNJ: NNNNNNN-DD.AAAA.J.TR.OOOO
       const seq = d.substring(0, 7), dv = d.substring(7, 9), ano = d.substring(9, 13);
       const j = d.substring(13, 14), tr = d.substring(14, 16), orig = d.substring(16, 20);
       const formatado = `${seq}-${dv}.${ano}.${j}.${tr}.${orig}`;
       const parteUnif = `${seq}-${dv}.${ano}`;
 
-      const esaj = (host, base, pasta, nome) => ({
+      if (!sigla) {
+        if (j === "8") {
+          const tjs = { "06": "TJCE", "26": "TJSP", "13": "TJMG", "19": "TJRJ", "21": "TJRS", "16": "TJPR", "17": "TJPE", "05": "TJBA" };
+          sigla = tjs[tr] || `TJ${tr}`;
+        } else if (j === "5") {
+          sigla = `TRT${parseInt(tr, 10)}`;
+        } else if (j === "4") {
+          sigla = `TRF${parseInt(tr, 10)}`;
+        }
+      }
+
+      const esaj = (host, pasta, nome) => ({
         nome,
         url: `https://${host}/${pasta}/search.do?conversationId=&paginaConsulta=1&cbPesquisa=NUMPROC` +
              `&numeroDigitoAnoUnificado=${encodeURIComponent(parteUnif)}&foroNumeroUnificado=${orig}` +
@@ -742,22 +760,31 @@
       });
 
       if (j === "8" && tr === "06") {            // TJCE
-        links.push(esaj("esaj.tjce.jus.br", "", "cpopg", "e-SAJ TJCE (1º grau)"));
-        links.push(esaj("esaj.tjce.jus.br", "", "cposg5", "e-SAJ TJCE (2º grau)"));
+        links.push(esaj("esaj.tjce.jus.br", "cpopg", "e-SAJ TJCE (1º grau)"));
+        links.push(esaj("esaj.tjce.jus.br", "cposg5", "e-SAJ TJCE (2º grau)"));
       } else if (j === "8" && tr === "26") {     // TJSP
-        links.push(esaj("esaj.tjsp.jus.br", "", "cpopg", "e-SAJ TJSP (1º grau)"));
-        links.push(esaj("esaj.tjsp.jus.br", "", "cposg", "e-SAJ TJSP (2º grau)"));
+        links.push(esaj("esaj.tjsp.jus.br", "cpopg", "e-SAJ TJSP (1º grau)"));
+        links.push(esaj("esaj.tjsp.jus.br", "cposg", "e-SAJ TJSP (2º grau)"));
       } else if (j === "5") {                    // Justiça do Trabalho (PJe)
         const regiao = String(parseInt(tr, 10));
         links.push({
-          nome: `PJe TRT${regiao}`,
+          nome: `PJe TRT${regiao} (1º grau)`,
           url: `https://pje.trt${regiao}.jus.br/consultaprocessual/detalhe-processo/${formatado}/1`
+        });
+        links.push({
+          nome: `PJe TRT${regiao} (2º grau)`,
+          url: `https://pje.trt${regiao}.jus.br/consultaprocessual/detalhe-processo/${formatado}/2`
         });
       } else if (j === "4" && tr === "05") {     // TRF5
         links.push({ nome: "PJe TRF5 (consulta pública)", url: "https://pje1g.trf5.jus.br/pjeconsulta/ConsultaPublica/listView.seam" });
       }
 
-      links.push({ nome: "Portal CNJ (Comunicações)", url: `https://comunica.pje.jus.br/consulta?numeroUnico=${d}` });
+      // Parâmetros oficiais do Comunica PJe (CNJ): siglaTribunal e numeroProcesso
+      const cnjUrl = sigla
+        ? `https://comunica.pje.jus.br/consulta?siglaTribunal=${sigla}&numeroProcesso=${d}`
+        : `https://comunica.pje.jus.br/consulta?numeroProcesso=${d}`;
+      links.push({ nome: `Portal CNJ (${sigla || 'Comunicações'})`, url: cnjUrl });
+
       return links;
     }
 
