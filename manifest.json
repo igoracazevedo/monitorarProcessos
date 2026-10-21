@@ -1,16 +1,22 @@
 {
   "name": "IAZ Jud - Monitoramento Processual",
   "short_name": "IAZ Jud",
+  "description": "Sistema de monitoramento de processos judiciais com Supabase e DataJud",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#090d16",
   "theme_color": "#090d16",
   "icons": [
     {
-      "src": "./logo.png",
-      "sizes": "512x512",
+      "src": "./icon.png",
+      "sizes": "192x192 512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ]
 }

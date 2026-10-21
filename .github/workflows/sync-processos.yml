@@ -1,0 +1,32 @@
+name: Sincronização de Processos (DataJud -> Supabase)
+
+on:
+  schedule:
+    # Executa a cada 2 horas (00:00, 02:00, 04:00, 06:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00 UTC)
+    - cron: '0 */2 * * *'
+  workflow_dispatch: # Permite disparo manual via painel do GitHub Actions
+
+jobs:
+  sincronizar:
+    name: Sincronizar Processos com DataJud
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Executar Rotina de Sincronização
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://kslmyvlewsmjnrhwklfd.supabase.co' }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY || 'sb_publishable_WjgE2b2iKdZrRopbQieW3A_Cr9R9pGB' }}
+          DATAJUD_API_KEY: ${{ secrets.DATAJUD_API_KEY || 'cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==' }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          echo "Iniciando sincronização automática dos processos com DataJud e Supabase..."
+          python sync_datajud.py
