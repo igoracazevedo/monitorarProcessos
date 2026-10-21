@@ -128,9 +128,17 @@ def consultar_datajud(numero_processo, tribunal_hint=""):
                 if not hits:
                     return {"success": False, "mensagem": f"Nenhum registro encontrado no DataJud ({tribunal.upper()})"}
 
+                # O mesmo processo pode ter vários graus (G1, G2...): consolida todos os movimentos
                 source = hits[0].get("_source", {})
-                movimentos = source.get("movimentos", [])
-                movimentos.sort(key=lambda m: m.get("dataHora", ""), reverse=True)
+                vistos = set()
+                movimentos = []
+                for h in hits:
+                    for m in h.get("_source", {}).get("movimentos", []):
+                        chave = (m.get("dataHora"), m.get("nome"))
+                        if chave not in vistos:
+                            vistos.add(chave)
+                            movimentos.append(m)
+                movimentos.sort(key=lambda m: m.get("dataHora") or "", reverse=True)
 
                 ultima_data = None
                 if movimentos:
