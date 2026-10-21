@@ -721,28 +721,46 @@
 
     function obterLinksTribunal(numProcesso, tribunal) {
       const d = String(numProcesso).replace(/\D/g, "");
-      const trib = String(tribunal || "").toUpperCase().trim();
       const links = [];
-      
-      if (trib === "TJCE" || d.substring(13, 16) === "806") {
-        links.push({
-          nome: "Portal e-SAJ TJCE",
-          url: `https://esaj.tjce.jus.br/cpopg/open.do`
-        });
-      } else if (trib === "TJSP") {
-        links.push({
-          nome: "Portal e-SAJ TJSP",
-          url: `https://esaj.tjsp.jus.br/cpopg/open.do`
-        });
+      if (d.length !== 20) {
+        links.push({ nome: "Portal CNJ (Comunicações)", url: `https://comunica.pje.jus.br/consulta?numeroUnico=${d}` });
+        return links;
       }
 
-      links.push({ 
-        nome: `Portal CNJ (Comunicações)`, 
-        url: `https://comunica.pje.jus.br/consulta?numeroUnico=${d}` 
+      // Estrutura CNJ: NNNNNNN-DD.AAAA.J.TR.OOOO (o tribunal real vem do próprio número)
+      const seq = d.substring(0, 7), dv = d.substring(7, 9), ano = d.substring(9, 13);
+      const j = d.substring(13, 14), tr = d.substring(14, 16), orig = d.substring(16, 20);
+      const formatado = `${seq}-${dv}.${ano}.${j}.${tr}.${orig}`;
+      const parteUnif = `${seq}-${dv}.${ano}`;
+
+      const esaj = (host, base, pasta, nome) => ({
+        nome,
+        url: `https://${host}/${pasta}/search.do?conversationId=&paginaConsulta=1&cbPesquisa=NUMPROC` +
+             `&numeroDigitoAnoUnificado=${encodeURIComponent(parteUnif)}&foroNumeroUnificado=${orig}` +
+             `&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(formatado)}` +
+             `&dadosConsulta.valorConsulta=&dadosConsulta.tipoNuProcesso=UNIFICADO`
       });
-      
+
+      if (j === "8" && tr === "06") {            // TJCE
+        links.push(esaj("esaj.tjce.jus.br", "", "cpopg", "e-SAJ TJCE (1º grau)"));
+        links.push(esaj("esaj.tjce.jus.br", "", "cposg5", "e-SAJ TJCE (2º grau)"));
+      } else if (j === "8" && tr === "26") {     // TJSP
+        links.push(esaj("esaj.tjsp.jus.br", "", "cpopg", "e-SAJ TJSP (1º grau)"));
+        links.push(esaj("esaj.tjsp.jus.br", "", "cposg", "e-SAJ TJSP (2º grau)"));
+      } else if (j === "5") {                    // Justiça do Trabalho (PJe)
+        const regiao = String(parseInt(tr, 10));
+        links.push({
+          nome: `PJe TRT${regiao}`,
+          url: `https://pje.trt${regiao}.jus.br/consultaprocessual/detalhe-processo/${formatado}/1`
+        });
+      } else if (j === "4" && tr === "05") {     // TRF5
+        links.push({ nome: "PJe TRF5 (consulta pública)", url: "https://pje1g.trf5.jus.br/pjeconsulta/ConsultaPublica/listView.seam" });
+      }
+
+      links.push({ nome: "Portal CNJ (Comunicações)", url: `https://comunica.pje.jus.br/consulta?numeroUnico=${d}` });
       return links;
     }
+
     function obterProcessosFiltrados() {
       const query = (document.getElementById("searchInput").value || "").toLowerCase().trim();
       const queryLimpa = query.replace(/\D/g, "");
@@ -840,7 +858,6 @@
         const lista = grupos[tipo].sort((a, b) => ((parseData(b.ultimaData) || 0) - (parseData(a.ultimaData) || 0)));
         const htmlProcessos = lista.map(p => {
           const cleanId = String(p.processo).replace(/\D/g, '');
-          const link = obterLinksTribunal(p.processo, p.tribunal)[0];
           const dataVerif = formatarDataVerificacao(p.ultima_verificacao);
           const verifCor = p.ultima_verificacao 
             ? 'text-slate-500 dark:text-slate-400' 
@@ -876,7 +893,7 @@
                   <button onclick='abrirEditar(${JSON.stringify(p)})' class="px-2.5 py-1 text-slate-600 border border-slate-300 rounded-md text-xs">✏️ Editar</button>
                   <button onclick="excluirProcesso('${p.processo}')" class="px-2.5 py-1 text-red-600 border border-red-300 rounded-md text-xs">🗑️ Excluir</button>
                 </div>
-                <a href="${link.url}" target="_blank" class="text-xs text-blue-600 dark:text-blue-400 font-semibold">🔗 Abrir no ${link.nome}</a>
+                <div class="flex flex-col items-end gap-0.5">${obterLinksTribunal(p.processo, p.tribunal).map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="text-xs text-blue-600 dark:text-blue-400 font-semibold">🔗 Abrir no ${l.nome}</a>`).join('')}</div>
               </div>
               <div>
                 <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2">📜 Histórico de Movimentações</h4>
