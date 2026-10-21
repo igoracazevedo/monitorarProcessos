@@ -670,30 +670,50 @@
       document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
     }
 
+    const TZ_FORTALEZA = "America/Fortaleza";
+
+    // Datas sem fuso (ex: "2026-10-21T13:29:06") são gravadas em UTC pelo Supabase
+    function parseData(dataStr) {
+      if (!dataStr) return null;
+      let s = String(dataStr).trim();
+      if (/^\d{4}-\d{2}-\d{2}T[\d:.]+$/.test(s)) s += "Z";
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function partesFortaleza(d) {
+      const p = {};
+      new Intl.DateTimeFormat("pt-BR", {
+        timeZone: TZ_FORTALEZA, year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", hour12: false
+      }).formatToParts(d).forEach(x => p[x.type] = x.value);
+      if (p.hour === "24") p.hour = "00";
+      return p;
+    }
+
     function formatarDataHora(dataStr) {
       if (!dataStr) return 'Sem registro';
-      const d = new Date(dataStr);
-      if (isNaN(d.getTime())) return String(dataStr);
-      return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} às ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      const d = parseData(dataStr);
+      if (!d) return String(dataStr);
+      const p = partesFortaleza(d);
+      return `${p.day}/${p.month}/${p.year} às ${p.hour}:${p.minute}`;
     }
 
     function formatarDataVerificacao(dataStr) {
       if (!dataStr) return 'Não verificado';
-      const d = new Date(dataStr);
-      if (isNaN(d.getTime())) return String(dataStr);
-      const dia = String(d.getDate()).padStart(2, '0');
-      const mes = String(d.getMonth() + 1).padStart(2, '0');
-      const ano = d.getFullYear();
-      const hora = String(d.getHours()).padStart(2, '0');
-      const min = String(d.getMinutes()).padStart(2, '0');
-      return `${dia}/${mes}/${ano} às ${hora}:${min}`;
+      const d = parseData(dataStr);
+      if (!d) return String(dataStr);
+      const p = partesFortaleza(d);
+      return `${p.day}/${p.month}/${p.year} às ${p.hour}:${p.minute}`;
     }
 
     function calcularDiasDesde(dataStr) {
-      if (!dataStr) return "Sem data";
-      const dataMov = new Date(dataStr);
-      if (isNaN(dataMov.getTime())) return "Sem data";
-      const diffDias = Math.floor((new Date().setHours(0,0,0,0) - new Date(dataMov.getFullYear(), dataMov.getMonth(), dataMov.getDate()).getTime()) / (1000 * 60 * 60 * 24));
+      const dataMov = parseData(dataStr);
+      if (!dataMov) return "Sem data";
+      const a = partesFortaleza(dataMov), b = partesFortaleza(new Date());
+      const diaA = Date.UTC(+a.year, +a.month - 1, +a.day);
+      const diaB = Date.UTC(+b.year, +b.month - 1, +b.day);
+      const diffDias = Math.round((diaB - diaA) / 86400000);
       if (diffDias <= 0) return "Hoje";
       if (diffDias === 1) return "Há 1 dia";
       return `Há ${diffDias} dias`;
@@ -817,7 +837,7 @@
       });
 
       container.innerHTML = Object.keys(grupos).map(tipo => {
-        const lista = grupos[tipo].sort((a, b) => (new Date(b.ultimaData).getTime() || 0) - (new Date(a.ultimaData).getTime() || 0));
+        const lista = grupos[tipo].sort((a, b) => ((parseData(b.ultimaData) || 0) - (parseData(a.ultimaData) || 0)));
         const htmlProcessos = lista.map(p => {
           const cleanId = String(p.processo).replace(/\D/g, '');
           const link = obterLinksTribunal(p.processo, p.tribunal)[0];
@@ -845,7 +865,7 @@
                     🕒 Verificado: ${dataVerif}
                   </span>
                 </div>
-                <span>⏱️ ${calcularDiasDesde(p.ultimaData)}</span>
+                <span id="dias-${cleanId}">⏱️ ${calcularDiasDesde(p.ultimaData)}</span>
               </div>
             </summary>
             <div class="px-4 pb-4 pt-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 space-y-3">
@@ -884,6 +904,9 @@
       try {
         const rows = await supabaseRequest(`movimentacoes?processo=eq.${encodeURIComponent(numProcesso)}&select=*&order=data_movimentacao.desc`);
         if (rows && rows.length > 0) {
+          const maisRecente = rows.reduce((a, b) => (parseData(b.data_movimentacao) > parseData(a.data_movimentacao) ? b : a));
+          const lblDias = document.getElementById(`dias-${cleanId}`);
+          if (lblDias) lblDias.innerText = `⏱️ ${calcularDiasDesde(maisRecente.data_movimentacao)}`;
           box.innerHTML = rows.map(m => `
             <div class="border-l-2 border-blue-500 pl-3 py-2 bg-white dark:bg-slate-950 rounded-r-lg border border-slate-200 dark:border-slate-800 text-xs shadow-sm">
               <div class="flex items-center justify-between text-[10px] text-slate-500 font-mono mb-1">
