@@ -376,6 +376,16 @@
 
     let API_URL = localStorage.getItem("PROCESSOS_API_URL") || DEFAULT_API_URL;
     let CONFIG_GLOBAL = { app_theme: "dark", api_url: API_URL };
+
+    // Só considera API própria se for um servidor local (localhost); Apps Script legado é ignorado
+    function usaApiLocal() {
+      return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(API_URL || "");
+    }
+    // Descarta valor legado do Apps Script salvo no navegador
+    if (/script\.google\.com/i.test(API_URL || "")) {
+      localStorage.removeItem("PROCESSOS_API_URL");
+      API_URL = DEFAULT_API_URL;
+    }
     let processosData = [];
     let empresasData = [];
     let logoTempBase64 = "";
@@ -417,7 +427,8 @@
         rows.forEach(r => {
           if (r.chave) CONFIG_GLOBAL[r.chave] = r.valor;
         });
-        if (CONFIG_GLOBAL.api_url) API_URL = CONFIG_GLOBAL.api_url;
+        // Ignora URLs legadas do Apps Script gravadas no Supabase
+        if (CONFIG_GLOBAL.api_url && !/script\.google\.com/i.test(CONFIG_GLOBAL.api_url) && !IS_GITHUB_PAGES) API_URL = CONFIG_GLOBAL.api_url;
         aplicarTema(CONFIG_GLOBAL.app_theme || "dark");
       } catch (e) {
         console.error("Erro ao carregar do Supabase", e);
@@ -895,7 +906,7 @@
       const btn = document.getElementById(`btn-sync-${cleanId}`);
       if (btn) btn.innerText = "Buscando...";
 
-      if (IS_GITHUB_PAGES && (!API_URL || API_URL.includes("github.io"))) {
+      if (IS_GITHUB_PAGES && !usaApiLocal()) {
         alert(`O processo ${numProcesso} é monitorado automaticamente na nuvem a cada 2 horas pelo GitHub Actions.\n\nRecarregando dados mais recentes do Supabase...`);
         await carregarProcessos();
         if (btn) btn.innerText = "⚡ Atualizar";
@@ -1002,7 +1013,7 @@
         return;
       }
 
-      if (IS_GITHUB_PAGES && (!API_URL || API_URL.includes("github.io"))) {
+      if (IS_GITHUB_PAGES && !usaApiLocal()) {
         const querAbrir = confirm(
           "☁️ Monitoramento 100% em Nuvem Ativo!\n\n" +
           "Todos os processos são consultados no DataJud e atualizados no Supabase a cada 2 horas pelo GitHub Actions.\n\n" +
