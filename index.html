@@ -565,9 +565,26 @@
           auth: {
             flowType: 'pkce',
             persistSession: true,
-            autoRefreshToken: true
+            autoRefreshToken: true,
+            detectSessionInUrl: true
           }
         });
+
+        // Se houver retorno de OAuth com ?code= na URL, processa a troca pelo token de sessão
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('code')) {
+          try {
+            const { data, error } = await window.supabaseClient.auth.exchangeCodeForSession(urlParams.get('code'));
+            if (data && data.session) {
+              currentSession = data.session;
+              window.history.replaceState({}, document.title, window.location.pathname);
+              await processarUsuarioAutenticado(data.session.user);
+              return;
+            }
+          } catch (codeErr) {
+            console.warn("Aviso ao trocar código OAuth por sessão:", codeErr);
+          }
+        }
 
         // Escuta alterações de estado de autenticação
         window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
@@ -682,15 +699,22 @@
 
     async function entrarComGoogle() {
       const btn = document.getElementById("btnLoginGoogle");
+
+      if (window.location.protocol === 'file:') {
+        alert("O login com Google não funciona abrindo o arquivo localmente com 'file://'.\n\nPor favor, execute o servidor local (py server.py e acesse http://localhost:8000) ou acesse pelo GitHub Pages!");
+        return;
+      }
+
       if (btn) {
         btn.disabled = true;
         btn.innerHTML = `<span class="animate-spin mr-2">⏳</span> Conectando ao Google...`;
       }
       try {
+        const redirectUrl = window.location.origin + window.location.pathname;
         const { error } = await window.supabaseClient.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: window.location.origin + window.location.pathname
+            redirectTo: redirectUrl
           }
         });
         if (error) throw error;
