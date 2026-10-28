@@ -13,6 +13,7 @@
       navigator.serviceWorker.register("./sw.js").catch(err => console.log("SW error", err));
     }
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   
   <!-- Bibliotecas de Exportação (Excel e PDF) -->
@@ -30,6 +31,69 @@
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans min-h-screen flex flex-col md:flex-row transition-colors duration-150">
+  <!-- Telas de Autenticação -->
+  <!-- 1. Loading Inicial -->
+  <div id="authLoadingScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 text-slate-200">
+    <div class="flex flex-col items-center gap-3">
+      <div class="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+      <p class="text-sm font-medium text-slate-400">Verificando acesso...</p>
+    </div>
+  </div>
+
+  <!-- 2. Tela de Login -->
+  <div id="loginScreen" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900/90 p-8 text-center shadow-2xl backdrop-blur-md space-y-4">
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600/10 border border-blue-500/20 text-2xl shadow-inner">
+        ⚖️
+      </div>
+      <div>
+        <h1 class="text-xl font-bold text-slate-100">IAZ Jud</h1>
+        <p class="text-xs text-blue-400 font-medium mt-0.5">Monitoramento Processual</p>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Acesse os autos, movimentações e relatórios com sua conta Google autorizada.
+      </p>
+      <button id="btnLoginGoogle" onclick="entrarComGoogle()" 
+        class="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-semibold text-sm shadow transition duration-150 active:scale-[0.99]">
+        <svg class="h-4 w-4" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
+          <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+          <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
+        </svg>
+        <span>Entrar com Google</span>
+      </button>
+      <div class="pt-2 border-t border-slate-800/80">
+        <p class="text-[11px] text-slate-500">🔒 Acesso restrito a usuários previamente liberados.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Tela de Acesso Negado -->
+  <div id="semAcessoScreen" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-rose-500/30 bg-slate-900/90 p-8 text-center shadow-2xl backdrop-blur-md space-y-4">
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/10 border border-rose-500/20 text-2xl text-rose-400">
+        🛡️
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-100">Acesso Não Autorizado</h2>
+        <p class="text-xs text-rose-400 font-medium mt-0.5">Usuário não cadastrado ou inativo</p>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        A conta Google <b id="semAcessoEmail" class="text-amber-400 font-mono">email@gmail.com</b> foi autenticada, mas ainda não está na lista de usuários liberados.
+      </p>
+      <p class="text-[11px] text-slate-500">
+        Solicite a liberação do seu e-mail a um administrador do sistema.
+      </p>
+      <button onclick="sairDoSistema()" 
+        class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold shadow transition">
+        <span>🚪</span> Usar outra conta Google
+      </button>
+    </div>
+  </div>
+
+  <!-- Container Principal da Aplicação -->
+  <div id="appLayout" class="hidden min-h-screen flex flex-col md:flex-row w-full">
 
   <!-- Overlay Mobile -->
   <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden md:hidden"></div>
@@ -64,11 +128,35 @@
           <span>Cadastro de Processo</span>
         </button>
 
+        <button id="btnMenuUsuarios" onclick="openUsuariosModal(); fecharSidebar();" class="hidden w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition">
+          <span>👥</span>
+          <span>Usuários Liberados</span>
+        </button>
+
         <button onclick="openConfigModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition">
           <span>⚙️</span>
           <span>Configurações</span>
         </button>
       </nav>
+    </div>
+
+    <!-- Perfil do Usuário Logado -->
+    <div class="p-3 border-t border-slate-200 dark:border-slate-800">
+      <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+        <div class="flex items-center gap-2 min-w-0">
+          <img id="userAvatar" src="" alt="Avatar" onerror="this.src='https://ui-avatars.com/api/?name=U&background=2563eb&color=fff'" class="h-8 w-8 rounded-full border border-slate-200 dark:border-slate-700 object-cover bg-slate-200 dark:bg-slate-800">
+          <div class="min-w-0">
+            <p id="userNome" class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">Usuário</p>
+            <div class="flex items-center gap-1">
+              <span id="userBadgePapel" class="text-[9px] px-1.5 py-0.2 rounded font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">Admin</span>
+              <p id="userEmail" class="text-[10px] text-slate-500 truncate max-w-[85px]">email</p>
+            </div>
+          </div>
+        </div>
+        <button onclick="sairDoSistema()" title="Sair da Conta" class="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition text-sm">
+          🚪
+        </button>
+      </div>
     </div>
 
     <!-- Sincronização Geral -->
@@ -233,6 +321,74 @@
     </div>
   </div>
 
+  <!-- MODAL: Gerenciar Usuários Liberados -->
+  <div id="usuariosModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-xl rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Usuários Liberados</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Controle quem pode acessar o IAZ Jud via login Google</p>
+        </div>
+        <button onclick="closeUsuariosModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1">✕</button>
+      </div>
+
+      <!-- Formulário: Adicionar / Liberar Usuário -->
+      <form id="usuarioForm" onsubmit="salvarUsuarioLiberado(event)" class="space-y-3 bg-slate-50 dark:bg-slate-950/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
+        <h4 id="usuarioFormTitulo" class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">Liberar Novo Usuário</h4>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">E-mail Google*</label>
+            <input type="email" id="campoUserEmail" required placeholder="exemplo@gmail.com"
+              class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nome Completo</label>
+            <input type="text" id="campoUserNome" placeholder="Ex: Dr. Carlos Silva"
+              class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Papel / Permissão</label>
+            <select id="campoUserPapel" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="solicitante">Operador (Acesso Padrão)</option>
+              <option value="admin">Administrador (Total)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Status de Acesso</label>
+            <select id="campoUserAtivo" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="true">Liberado (Ativo)</option>
+              <option value="false">Bloqueado (Inativo)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" onclick="limparFormUsuario()" id="btnCancelarEditUser" class="hidden px-3 py-1.5 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+            Cancelar Edição
+          </button>
+          <button type="submit" id="btnSalvarUser" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium shadow">
+            Salvar Usuário
+          </button>
+        </div>
+      </form>
+
+      <!-- Lista de Usuários Cadastrados -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Usuários Cadastrados</h4>
+          <span id="totalUsuariosBadge" class="text-[10px] text-slate-400 font-mono">0 usuários</span>
+        </div>
+        <div id="usuariosListaContainer" class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+          <p class="text-xs text-slate-500 py-3 text-center">Carregando usuários...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: Adicionar / Editar Processo -->
   <div id="processModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -390,17 +546,336 @@
     let empresasData = [];
     let logoTempBase64 = "";
 
+    // Estado Global de Autenticação
+    let currentSession = null;
+    let currentUser = null;
+    let currentPapel = null;
+    let usuariosLiberadosData = [];
+
+    // Inicialização da Autenticação via Supabase
     window.addEventListener("DOMContentLoaded", async () => {
-      await carregarConfiguracoesSupabase();
+      await inicializarAutenticacao();
     });
+
+    async function inicializarAutenticacao() {
+      exibirEstadoAuth('loading');
+
+      if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+          auth: {
+            flowType: 'pkce',
+            persistSession: true,
+            autoRefreshToken: true
+          }
+        });
+
+        // Escuta alterações de estado de autenticação
+        window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+          currentSession = session;
+          if (session && session.user) {
+            await processarUsuarioAutenticado(session.user);
+          } else {
+            currentUser = null;
+            currentPapel = null;
+            exibirEstadoAuth('login');
+          }
+        });
+
+        // Recupera sessão existente
+        const { data, error } = await window.supabaseClient.auth.getSession();
+        if (error || !data || !data.session) {
+          exibirEstadoAuth('login');
+        }
+      } else {
+        console.error("SDK Supabase não carregado.");
+        exibirEstadoAuth('login');
+      }
+    }
+
+    async function processarUsuarioAutenticado(user) {
+      currentUser = user;
+      const email = (user.email || "").toLowerCase().trim();
+
+      // Consulta se o usuário tem papel ativo
+      const papel = await obterPapelUsuario(email);
+      currentPapel = papel;
+
+      if (papel) {
+        // Usuário liberado com sucesso!
+        atualizarUiUsuarioLogado(user, papel);
+        exibirEstadoAuth('app');
+        await carregarConfiguracoesSupabase();
+      } else {
+        // Usuário logou no Google mas não está liberado
+        document.getElementById("semAcessoEmail").innerText = email;
+        exibirEstadoAuth('sem-acesso');
+      }
+    }
+
+    async function obterPapelUsuario(email) {
+      try {
+        // 1. Tenta RPC papel_atual (nativo do Supabase)
+        const res = await supabaseRequest("rpc/papel_atual", "POST", {});
+        if (res && typeof res === 'string') return res;
+      } catch (e) {
+        // Silencioso se RPC não estiver acessível
+      }
+
+      // 2. Consulta direta na tabela usuarios
+      try {
+        const rows = await supabaseRequest(`usuarios?email=eq.${encodeURIComponent(email)}&select=*`);
+        if (rows && rows.length > 0 && rows[0].ativo) {
+          return rows[0].papel || "solicitante";
+        }
+      } catch (err) {
+        console.warn("Erro ao verificar tabela usuarios:", err);
+      }
+      return null;
+    }
+
+    function exibirEstadoAuth(estado) {
+      const loading = document.getElementById("authLoadingScreen");
+      const login = document.getElementById("loginScreen");
+      const semAcesso = document.getElementById("semAcessoScreen");
+      const app = document.getElementById("appLayout");
+
+      if (!loading || !login || !semAcesso || !app) return;
+
+      loading.classList.add("hidden");
+      login.classList.add("hidden");
+      semAcesso.classList.add("hidden");
+      app.classList.add("hidden");
+
+      if (estado === 'loading') loading.classList.remove("hidden");
+      else if (estado === 'login') login.classList.remove("hidden");
+      else if (estado === 'sem-acesso') semAcesso.classList.remove("hidden");
+      else if (estado === 'app') app.classList.remove("hidden");
+    }
+
+    function atualizarUiUsuarioLogado(user, papel) {
+      const nome = user.user_metadata?.full_name || user.email?.split('@')[0] || "Usuário";
+      const email = user.email || "";
+      const avatar = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=2563eb&color=fff`;
+
+      const elAvatar = document.getElementById("userAvatar");
+      const elNome = document.getElementById("userNome");
+      const elEmail = document.getElementById("userEmail");
+      const elBadge = document.getElementById("userBadgePapel");
+      const btnMenuUser = document.getElementById("btnMenuUsuarios");
+
+      if (elAvatar) elAvatar.src = avatar;
+      if (elNome) elNome.innerText = nome;
+      if (elEmail) elEmail.innerText = email;
+      if (elBadge) {
+        elBadge.innerText = papel === 'admin' ? '👑 Admin' : '👤 Operador';
+        elBadge.className = papel === 'admin'
+          ? "text-[9px] px-1.5 py-0.5 rounded font-semibold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300"
+          : "text-[9px] px-1.5 py-0.5 rounded font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300";
+      }
+
+      // Mostra menu de Usuários Liberados apenas para Administradores
+      if (btnMenuUser) {
+        if (papel === 'admin') btnMenuUser.classList.remove("hidden");
+        else btnMenuUser.classList.add("hidden");
+      }
+    }
+
+    async function entrarComGoogle() {
+      const btn = document.getElementById("btnLoginGoogle");
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="animate-spin mr-2">⏳</span> Conectando ao Google...`;
+      }
+      try {
+        const { error } = await window.supabaseClient.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin + window.location.pathname
+          }
+        });
+        if (error) throw error;
+      } catch (err) {
+        alert("Falha ao iniciar login com Google: " + err.message);
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<span>Entrar com Google</span>`;
+        }
+      }
+    }
+
+    async function sairDoSistema() {
+      if (!confirm("Deseja realmente sair da sua conta?")) return;
+      try {
+        if (window.supabaseClient) await window.supabaseClient.auth.signOut();
+      } catch (e) {
+        console.warn("Erro ao fazer logout:", e);
+      }
+      currentSession = null;
+      currentUser = null;
+      currentPapel = null;
+      exibirEstadoAuth('login');
+    }
+
+    // --- Gestão de Usuários Liberados (Whitelist) ---
+    function openUsuariosModal() {
+      limparFormUsuario();
+      document.getElementById("usuariosModal").classList.remove("hidden");
+      carregarListaUsuarios();
+    }
+
+    function closeUsuariosModal() {
+      document.getElementById("usuariosModal").classList.add("hidden");
+    }
+
+    function limparFormUsuario() {
+      document.getElementById("usuarioForm").reset();
+      document.getElementById("campoUserEmail").readOnly = false;
+      document.getElementById("usuarioFormTitulo").innerText = "Liberar Novo Usuário";
+      document.getElementById("btnSalvarUser").innerText = "Salvar Usuário";
+      document.getElementById("btnCancelarEditUser").classList.add("hidden");
+    }
+
+    async function carregarListaUsuarios() {
+      const container = document.getElementById("usuariosListaContainer");
+      const badge = document.getElementById("totalUsuariosBadge");
+      container.innerHTML = `<p class="text-xs text-slate-500 py-3 text-center">Carregando usuários...</p>`;
+
+      try {
+        const rows = await supabaseRequest("usuarios?select=*&order=nome.asc");
+        usuariosLiberadosData = rows || [];
+        if (badge) badge.innerText = `${usuariosLiberadosData.length} usuário(s)`;
+
+        if (usuariosLiberadosData.length === 0) {
+          container.innerHTML = `<p class="text-xs text-slate-500 py-3 text-center">Nenhum usuário liberado cadastrado.</p>`;
+          return;
+        }
+
+        const logadoEmail = (currentUser?.email || "").toLowerCase().trim();
+
+        container.innerHTML = usuariosLiberadosData.map(u => {
+          const email = (u.email || "").toLowerCase();
+          const nome = u.nome || email;
+          const isAdmin = u.papel === 'admin';
+          const isAtivo = Boolean(u.ativo);
+          const isMe = email === logadoEmail;
+
+          return `
+          <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="h-7 w-7 rounded-full bg-blue-600/10 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center border border-blue-500/20 text-xs uppercase flex-shrink-0">
+                ${nome.charAt(0)}
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <p class="font-bold text-slate-800 dark:text-slate-200 truncate">${nome}</p>
+                  ${isMe ? `<span class="text-[9px] px-1 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">Você</span>` : ''}
+                </div>
+                <p class="text-[11px] text-slate-500 font-mono truncate">${email}</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-[10px] px-2 py-0.5 rounded font-semibold ${isAdmin ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}">
+                ${isAdmin ? '👑 Admin' : '👤 Operador'}
+              </span>
+
+              <button onclick="alternarStatusUsuario('${email}', ${isAtivo})" title="${isAtivo ? 'Clique para Bloquear' : 'Clique para Liberar'}" 
+                class="text-[10px] px-2 py-0.5 rounded font-semibold transition ${isAtivo ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 hover:opacity-80' : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 hover:opacity-80'}">
+                ${isAtivo ? '🟢 Ativo' : '🔴 Bloqueado'}
+              </button>
+
+              <button onclick='editarUsuarioLiberado(${JSON.stringify(u)})' title="Editar" class="p-1 text-slate-400 hover:text-blue-500 text-xs">✏️</button>
+              ${!isMe ? `<button onclick="excluirUsuarioLiberado('${email}')" title="Excluir" class="p-1 text-slate-400 hover:text-rose-500 text-xs">🗑️</button>` : ''}
+            </div>
+          </div>`;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = `<p class="text-xs text-rose-500 py-3 text-center">Erro ao carregar usuários: ${err.message}</p>`;
+      }
+    }
+
+    function editarUsuarioLiberado(u) {
+      document.getElementById("campoUserEmail").value = u.email;
+      document.getElementById("campoUserEmail").readOnly = true;
+      document.getElementById("campoUserNome").value = u.nome || "";
+      document.getElementById("campoUserPapel").value = u.papel || "solicitante";
+      document.getElementById("campoUserAtivo").value = String(Boolean(u.ativo));
+
+      document.getElementById("usuarioFormTitulo").innerText = "Editar Usuário";
+      document.getElementById("btnSalvarUser").innerText = "Atualizar Usuário";
+      document.getElementById("btnCancelarEditUser").classList.remove("hidden");
+    }
+
+    async function salvarUsuarioLiberado(e) {
+      e.preventDefault();
+      const email = document.getElementById("campoUserEmail").value.trim().toLowerCase();
+      const nome = document.getElementById("campoUserNome").value.trim() || email.split('@')[0];
+      const papel = document.getElementById("campoUserPapel").value;
+      const ativo = document.getElementById("campoUserAtivo").value === "true";
+
+      const btn = document.getElementById("btnSalvarUser");
+      btn.disabled = true;
+      btn.innerText = "Salvando...";
+
+      try {
+        await supabaseRequest("usuarios", "POST", {
+          email,
+          nome,
+          papel,
+          ativo
+        }, { "Prefer": "resolution=merge-duplicates,return=representation" });
+
+        limparFormUsuario();
+        await carregarListaUsuarios();
+        alert(`Usuário ${email} salvo com sucesso!`);
+      } catch (err) {
+        alert("Erro ao salvar usuário liberado: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "Salvar Usuário";
+      }
+    }
+
+    async function alternarStatusUsuario(email, statusAtual) {
+      const logadoEmail = (currentUser?.email || "").toLowerCase().trim();
+      if (email === logadoEmail && statusAtual) {
+        return alert("Você não pode bloquear o seu próprio usuário administrador!");
+      }
+      try {
+        await supabaseRequest(`usuarios?email=eq.${encodeURIComponent(email)}`, "PATCH", {
+          ativo: !statusAtual
+        });
+        await carregarListaUsuarios();
+      } catch (err) {
+        alert("Erro ao alterar status do usuário: " + err.message);
+      }
+    }
+
+    async function excluirUsuarioLiberado(email) {
+      const logadoEmail = (currentUser?.email || "").toLowerCase().trim();
+      if (email === logadoEmail) {
+        return alert("Você não pode excluir o seu próprio usuário administrador!");
+      }
+      if (!confirm(`Deseja remover a permissão de acesso do usuário ${email}?`)) return;
+
+      try {
+        await supabaseRequest(`usuarios?email=eq.${encodeURIComponent(email)}`, "DELETE");
+        await carregarListaUsuarios();
+      } catch (err) {
+        alert("Erro ao remover usuário: " + err.message);
+      }
+    }
+
 
     async function supabaseRequest(endpoint, method = "GET", data = null, customHeaders = {}) {
       const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+      // Injeta o token de autenticação do usuário logado no Supabase
+      const authToken = currentSession?.access_token || SUPABASE_PUBLISHABLE_KEY;
       const options = {
         method: method,
         headers: {
           "apikey": SUPABASE_PUBLISHABLE_KEY,
-          "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+          "Authorization": `Bearer ${authToken}`,
           "Content-Type": "application/json",
           "Prefer": "return=representation",
           ...customHeaders
