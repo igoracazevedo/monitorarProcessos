@@ -623,7 +623,7 @@
 
       // 2. Consulta direta na tabela usuarios
       try {
-        const rows = await supabaseRequest(`usuarios?email=eq.${encodeURIComponent(email)}&select=*`);
+        const rows = await supabaseRequest(`ju_usuarios?email=eq.${encodeURIComponent(email)}&select=*`);
         if (rows && rows.length > 0 && rows[0].ativo) {
           return rows[0].papel || "solicitante";
         }
@@ -741,7 +741,7 @@
       container.innerHTML = `<p class="text-xs text-slate-500 py-3 text-center">Carregando usuários...</p>`;
 
       try {
-        const rows = await supabaseRequest("usuarios?select=*&order=nome.asc");
+        const rows = await supabaseRequest("ju_usuarios?select=*&order=nome.asc");
         usuariosLiberadosData = rows || [];
         if (badge) badge.innerText = `${usuariosLiberadosData.length} usuário(s)`;
 
@@ -818,7 +818,7 @@
       btn.innerText = "Salvando...";
 
       try {
-        await supabaseRequest("usuarios", "POST", {
+        await supabaseRequest("ju_usuarios", "POST", {
           email,
           nome,
           papel,
@@ -842,7 +842,7 @@
         return alert("Você não pode bloquear o seu próprio usuário administrador!");
       }
       try {
-        await supabaseRequest(`usuarios?email=eq.${encodeURIComponent(email)}`, "PATCH", {
+        await supabaseRequest(`ju_usuarios?email=eq.${encodeURIComponent(email)}`, "PATCH", {
           ativo: !statusAtual
         });
         await carregarListaUsuarios();
@@ -859,7 +859,7 @@
       if (!confirm(`Deseja remover a permissão de acesso do usuário ${email}?`)) return;
 
       try {
-        await supabaseRequest(`usuarios?email=eq.${encodeURIComponent(email)}`, "DELETE");
+        await supabaseRequest(`ju_usuarios?email=eq.${encodeURIComponent(email)}`, "DELETE");
         await carregarListaUsuarios();
       } catch (err) {
         alert("Erro ao remover usuário: " + err.message);
@@ -886,7 +886,19 @@
         options.body = JSON.stringify(data);
       }
 
-      const res = await fetch(url, options);
+      let res = await fetch(url, options);
+
+      // Fallback de transição: se der 404 e for tabela ju_*, tenta temporariamente sem o prefixo
+      if (res.status === 404 && endpoint.startsWith("ju_")) {
+        const fallbackEndpoint = endpoint.substring(3);
+        try {
+          const fallbackRes = await fetch(`${SUPABASE_URL}/rest/v1/${fallbackEndpoint}`, options);
+          if (fallbackRes.ok) {
+            res = fallbackRes;
+          }
+        } catch (_) {}
+      }
+
       const text = await res.text();
       
       if (!res.ok) {
@@ -898,7 +910,7 @@
 
     async function carregarConfiguracoesSupabase() {
       try {
-        const rows = await supabaseRequest("configuracoes?select=*");
+        const rows = await supabaseRequest("ju_configuracoes?select=*");
         rows.forEach(r => {
           if (r.chave) CONFIG_GLOBAL[r.chave] = r.valor;
         });
@@ -940,7 +952,7 @@
     async function alterarTema(tema) {
       CONFIG_GLOBAL.app_theme = tema;
       aplicarTema(tema);
-      await supabaseRequest("configuracoes", "POST", { chave: "app_theme", valor: tema }, { "Prefer": "resolution=merge-duplicates" });
+      await supabaseRequest("ju_configuracoes", "POST", { chave: "app_theme", valor: tema }, { "Prefer": "resolution=merge-duplicates" });
     }
 
     async function salvarConfiguracoes() {
@@ -949,7 +961,7 @@
         API_URL = apiUrlVal;
         CONFIG_GLOBAL.api_url = apiUrlVal;
         localStorage.setItem("PROCESSOS_API_URL", apiUrlVal);
-        await supabaseRequest("configuracoes", "POST", { chave: "api_url", valor: apiUrlVal }, { "Prefer": "resolution=merge-duplicates" });
+        await supabaseRequest("ju_configuracoes", "POST", { chave: "api_url", valor: apiUrlVal }, { "Prefer": "resolution=merge-duplicates" });
       }
       closeConfigModal();
     }
@@ -1030,8 +1042,8 @@
       container.innerHTML = `<div class="text-center py-12 text-slate-500 text-sm">Carregando dados do Supabase...</div>`;
       try {
         const [empresasRes, processosRes] = await Promise.all([
-          supabaseRequest("empresas?select=*"),
-          supabaseRequest("processos?select=*")
+          supabaseRequest("ju_empresas?select=*"),
+          supabaseRequest("ju_processos?select=*")
         ]);
 
         empresasData = empresasRes || [];
@@ -1131,7 +1143,7 @@
       const nome = document.getElementById("campoEmpNome").value.trim();
       const logotipo = logoTempBase64 || tratarUrlImagem(document.getElementById("campoEmpLogo").value);
 
-      await supabaseRequest("empresas", "POST", { codigo, nome, logotipo }, { "Prefer": "resolution=merge-duplicates" });
+      await supabaseRequest("ju_empresas", "POST", { codigo, nome, logotipo }, { "Prefer": "resolution=merge-duplicates" });
       limparLogoForm();
       document.getElementById("empresaForm").reset();
       await carregarProcessos();
@@ -1140,7 +1152,7 @@
 
     async function excluirEmpresa(cod) {
       if (!confirm(`Deseja realmente excluir a empresa ${cod}?`)) return;
-      await supabaseRequest(`empresas?codigo=eq.${encodeURIComponent(cod)}`, "DELETE");
+      await supabaseRequest(`ju_empresas?codigo=eq.${encodeURIComponent(cod)}`, "DELETE");
       await carregarProcessos();
       document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
     }
@@ -1421,7 +1433,7 @@
       box.innerHTML = `<div class="text-center py-3 text-xs text-slate-500">Carregando histórico do Supabase...</div>`;
 
       try {
-        const rows = await supabaseRequest(`movimentacoes?processo=eq.${encodeURIComponent(numProcesso)}&select=*&order=data_movimentacao.desc`);
+        const rows = await supabaseRequest(`ju_movimentacoes?processo=eq.${encodeURIComponent(numProcesso)}&select=*&order=data_movimentacao.desc`);
         if (rows && rows.length > 0) {
           const maisRecente = rows.reduce((a, b) => (parseData(b.data_movimentacao) > parseData(a.data_movimentacao) ? b : a));
           const lblDias = document.getElementById(`dias-${cleanId}`);
@@ -1488,7 +1500,7 @@
           if (dadosProcesso.tribunal && !tribunal) patchPayload.tribunal = dadosProcesso.tribunal;
 
           // 1. Atualiza na tabela processos com data de verificação atual
-          await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", patchPayload);
+          await supabaseRequest(`ju_processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", patchPayload);
 
           // 2. Insere movimentos no histórico em batch
           if (dadosProcesso.movimentos && dadosProcesso.movimentos.length > 0) {
@@ -1497,14 +1509,14 @@
               data_movimentacao: m.dataHora,
               atualizacao: m.nome || m.descricao || "Movimentação registrada"
             }));
-            await supabaseRequest("movimentacoes", "POST", batch, { "Prefer": "resolution=merge-duplicates" }).catch(() => {});
+            await supabaseRequest("ju_movimentacoes", "POST", batch, { "Prefer": "resolution=merge-duplicates" }).catch(() => {});
           }
 
           alert("Processo verificado e atualizado com sucesso no Supabase!");
           await carregarProcessos();
         } else {
           // Marca última verificação mesmo se tribunal não retornou novas movs
-          await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", {
+          await supabaseRequest(`ju_processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", {
             ultima_verificacao: new Date().toISOString()
           }).catch(() => {});
           alert(json.mensagem || "Processo não retornado pelo DataJud para este tribunal.");
@@ -1623,7 +1635,7 @@
             if (ultimaMovData) patchPayload.ultima_data = ultimaMovData;
             if (dadosProcesso.tribunal && !p.tribunal) patchPayload.tribunal = dadosProcesso.tribunal;
 
-            await supabaseRequest(`processos?processo=eq.${encodeURIComponent(num)}`, "PATCH", patchPayload);
+            await supabaseRequest(`ju_processos?processo=eq.${encodeURIComponent(num)}`, "PATCH", patchPayload);
 
             if (dadosProcesso.movimentos && dadosProcesso.movimentos.length > 0) {
               const batch = dadosProcesso.movimentos.map(m => ({
@@ -1631,13 +1643,13 @@
                 data_movimentacao: m.dataHora,
                 atualizacao: m.nome || m.descricao || "Movimentação registrada"
               }));
-              await supabaseRequest("movimentacoes", "POST", batch, { "Prefer": "resolution=merge-duplicates" }).catch(() => {});
+              await supabaseRequest("ju_movimentacoes", "POST", batch, { "Prefer": "resolution=merge-duplicates" }).catch(() => {});
             }
 
             sucessos++;
             adicionarLogSync(`✓ ${num}: Atualizado (${dadosProcesso.movimentos?.length || 0} movs)`, "success");
           } else {
-            await supabaseRequest(`processos?processo=eq.${encodeURIComponent(num)}`, "PATCH", {
+            await supabaseRequest(`ju_processos?processo=eq.${encodeURIComponent(num)}`, "PATCH", {
               ultima_verificacao: agoraIso
             }).catch(() => {});
             falhas++;
@@ -1677,14 +1689,14 @@
         status: document.getElementById("campoStatus").value
       };
 
-      await supabaseRequest("processos", "POST", payload, { "Prefer": "resolution=merge-duplicates" });
+      await supabaseRequest("ju_processos", "POST", payload, { "Prefer": "resolution=merge-duplicates" });
       closeProcessModal();
       await carregarProcessos();
     }
 
     async function excluirProcesso(numProcesso) {
       if (!confirm(`Excluir processo ${numProcesso}?`)) return;
-      await supabaseRequest(`processos?processo=eq.${encodeURIComponent(numProcesso)}`, "DELETE");
+      await supabaseRequest(`ju_processos?processo=eq.${encodeURIComponent(numProcesso)}`, "DELETE");
       await carregarProcessos();
     }
 

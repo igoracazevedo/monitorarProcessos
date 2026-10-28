@@ -44,7 +44,7 @@ class IazJudHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/api/status":
             try:
-                processos = supabase_request("processos?select=count", extra_headers={"Prefer": "count=exact"})
+                processos = supabase_request("ju_processos?select=count", extra_headers={"Prefer": "count=exact"})
                 self.responder_json(200, {
                     "status": "online",
                     "supabase": "conectado",

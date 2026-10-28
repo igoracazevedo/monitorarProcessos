@@ -71,7 +71,7 @@ def identificar_tribunal_cnj(numero_processo, tribunal_hint=""):
 
 
 def supabase_request(endpoint, method="GET", data=None, extra_headers=None):
-    """Executa requisições HTTP na API REST do Supabase."""
+    """Executa requisições HTTP na API REST do Supabase com fallback transparente."""
     url = f"{SUPABASE_URL}/rest/v1/{endpoint}"
     headers = {
         "apikey": SUPABASE_KEY,
@@ -94,6 +94,18 @@ def supabase_request(endpoint, method="GET", data=None, extra_headers=None):
             content = resp.read().decode("utf-8")
             return json.loads(content) if content else []
     except urllib.error.HTTPError as e:
+        # Fallback de transição: se a tabela ju_* retornar 404 (ainda não migrada), tenta tabela legada
+        if e.code == 404 and endpoint.startswith("ju_"):
+            fallback_endpoint = endpoint[3:]
+            try:
+                fallback_url = f"{SUPABASE_URL}/rest/v1/{fallback_endpoint}"
+                fallback_req = urllib.request.Request(fallback_url, data=body_bytes, headers=headers, method=method)
+                with urllib.request.urlopen(fallback_req, context=ctx, timeout=30) as resp:
+                    content = resp.read().decode("utf-8")
+                    return json.loads(content) if content else []
+            except Exception:
+                pass
+
         err_msg = e.read().decode("utf-8") if e.fp else str(e)
         raise RuntimeError(f"Erro Supabase [{e.code}]: {err_msg}")
 
@@ -199,7 +211,7 @@ def sincronizar_processo(processo_obj, verbose=True):
         # Mesmo se não achou no DataJud, marcamos que foi verificado para não ficar indefinido
         try:
             supabase_request(
-                f"processos?processo=eq.{num_processo}",
+                f"ju_processos?processo=eq.{num_processo}",
                 method="PATCH",
                 data={"ultima_verificacao": agora_iso}
             )
@@ -220,15 +232,15 @@ def sincronizar_processo(processo_obj, verbose=True):
     if tribunal_resolvido and not processo_obj.get("tribunal"):
         patch_data["tribunal"] = tribunal_resolvido
 
-    # Atualiza na tabela processos
+    # Atualiza na tabela ju_processos
     try:
         supabase_request(
-            f"processos?processo=eq.{num_processo}",
+            f"ju_processos?processo=eq.{num_processo}",
             method="PATCH",
             data=patch_data
         )
         if verbose:
-            print(f"    [OK] Tabela 'processos' atualizada. Última verificação: {agora_iso}")
+            print(f"    [OK] Tabela 'ju_processos' atualizada. Última verificação: {agora_iso}")
     except Exception as e:
         print(f"    [!] Erro ao atualizar processo no Supabase: {e}")
         return False
@@ -253,7 +265,7 @@ def sincronizar_processo(processo_obj, verbose=True):
             bloco = lote[i:i + tamanho_bloco]
             try:
                 supabase_request(
-                    "movimentacoes",
+                    "ju_movimentacoes",
                     method="POST",
                     data=bloco,
                     extra_headers={"Prefer": "resolution=merge-duplicates"}
@@ -264,7 +276,7 @@ def sincronizar_processo(processo_obj, verbose=True):
                 for item in bloco:
                     try:
                         supabase_request(
-                            "movimentacoes",
+                            "ju_movimentacoes",
                             method="POST",
                             data=item,
                             extra_headers={"Prefer": "resolution=merge-duplicates"}
@@ -285,7 +297,7 @@ def sincronizar_todos(verbose=True, apenas_pendentes=False):
     print("=" * 65)
 
     try:
-        endpoint = "processos?select=*"
+        endpoint = "ju_processos?select=*"
         if apenas_pendentes:
             endpoint += "&ultima_verificacao=is.null"
         processos = supabase_request(endpoint)
