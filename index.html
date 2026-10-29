@@ -523,14 +523,16 @@
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx20HclldVX0ee7_6CEaVl7qkHonkFbgAC_K-REepBnmetFKNbcracWpPhw9CxV3LcD/exec";
     
     const IS_GITHUB_PAGES = window.location.hostname.includes("github.io");
+    const IS_VERCEL = window.location.hostname.includes("vercel.app") || window.location.hostname.includes("vercel.dev");
     const GITHUB_REPO_URL = "https://github.com/igoracazevedo/monitorarProcessos";
 
-    // API de Sincronização: se local usa o servidor na porta 8000; se GitHub Pages, usa ações em nuvem
-    const DEFAULT_API_URL = IS_GITHUB_PAGES 
-      ? "" 
-      : (window.location.origin && window.location.origin.startsWith("http") ? `${window.location.origin}/api` : "http://localhost:8000/api");
+    // API de Sincronização: Vercel usa Serverless Function nativa (/api); local usa porta 8000; GitHub Pages usa Actions
+    const DEFAULT_API_URL = IS_VERCEL
+      ? `${window.location.origin}/api`
+      : (IS_GITHUB_PAGES ? "" : (window.location.origin && window.location.origin.startsWith("http") ? `${window.location.origin}/api` : "http://localhost:8000/api"));
 
     let API_URL = localStorage.getItem("PROCESSOS_API_URL") || DEFAULT_API_URL;
+    if (IS_VERCEL) API_URL = `${window.location.origin}/api`;
     let CONFIG_GLOBAL = { app_theme: "dark", api_url: API_URL };
 
     // Só considera API própria se for um servidor local (localhost); Apps Script legado é ignorado
