@@ -1,7 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" rx="112" fill="#090d16"/>
-  <path d="M256 64L384 128V256C384 350 332 430 256 448C180 430 128 350 128 256V128L256 64Z" fill="#1e293b" stroke="#3b82f6" stroke-width="12"/>
-  <path d="M256 96L352 144V256C352 332 304 400 256 416C208 400 160 332 160 256V144L256 96Z" fill="#0f172a" stroke="#60a5fa" stroke-width="8"/>
-  <text x="256" y="275" font-family="Arial, sans-serif" font-weight="bold" font-size="95" fill="#ffffff" text-anchor="middle">IAZ</text>
-  <circle cx="256" cy="340" r="12" fill="#f59e0b"/>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#001652"/>
+      <stop offset="100%" stop-color="#000d3c"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffc933"/>
+      <stop offset="100%" stop-color="#ffb800"/>
+    </linearGradient>
+  </defs>
+  <!-- Squircle com cantos bem arredondados (~22% de raio = 112px em 512px) e borda fina laranja -->
+  <rect x="12" y="12" width="488" height="488" rx="110" ry="110" fill="url(#bgGrad)" stroke="#ff6200" stroke-width="14"/>
+  
+  <!-- Ícone da Balança da Justiça / Escudo em Branco puro -->
+  <g transform="translate(256, 210)" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Haste central da balança -->
+    <line x1="0" y1="-80" x2="0" y2="70" stroke-width="18"/>
+    <!-- Travessão horizontal -->
+    <line x1="-100" y1="-50" x2="100" y2="-50" stroke-width="16"/>
+    <!-- Cúpula / topo -->
+    <circle cx="0" cy="-90" r="10" fill="#ffffff"/>
+    <!-- Base -->
+    <path d="M-45 70 L45 70" stroke-width="18"/>
+    <!-- Prato Esquerdo -->
+    <path d="M-100 -50 L-135 15 L-65 15 Z" stroke-width="10"/>
+    <path d="M-145 15 C-145 35 -55 35 -55 15 Z" fill="#ffffff" stroke-width="8"/>
+    <!-- Prato Direito -->
+    <path d="M100 -50 L65 15 L135 15 Z" stroke-width="10"/>
+    <path d="M55 15 C55 35 145 35 145 15 Z" fill="#ffffff" stroke-width="8"/>
+  </g>
+
+  <!-- Sigla "iaz" em Dourado #ffb800 -->
+  <text x="256" y="395" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="76" letter-spacing="3" fill="url(#goldGrad)" text-anchor="middle">iaz</text>
+  <circle cx="256" cy="425" r="5" fill="#ff6200"/>
 </svg>

@@ -1,9 +1,11 @@
-const CACHE_NAME = "iaz-jud-cache-v2";
+const CACHE_NAME = "iaz-jud-cache-v3";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
   "./icon.png",
+  "./icon-192.png",
+  "./icon-512.png",
   "./icon.svg"
 ];
 

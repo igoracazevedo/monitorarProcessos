@@ -1,13 +1,16 @@
 <!DOCTYPE html>
-<html lang="pt-BR"><div class="processo-item">
+<html lang="pt-BR" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>IAZ Jud - Monitoramento Processual</title>
-  <meta name="theme-color" content="#090d16" id="metaThemeColor">
+  <title>JUD IAZ - Monitoramento Processual</title>
+  <meta name="theme-color" content="#000d3c" id="metaThemeColor">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  
   <script>
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("./sw.js").catch(err => console.log("SW error", err));
@@ -22,39 +25,130 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
   <script>
-    tailwind.config = { darkMode: 'class' };
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            iaz: {
+              navy: '#001652',
+              deep: '#000d3c',
+              light: '#152354',
+              orange: '#ff6200',
+              orangeHover: '#ec7000',
+              gold: '#ffb800',
+              ice: '#f4f5f7',
+              darkBg: '#0b1120',
+              darkCard: '#151f32',
+              darkSurface: '#1e293b',
+              darkBorder: '#293548'
+            }
+          },
+          boxShadow: {
+            '2xs': '0 1px 2px 0 rgba(0, 0, 0, 0.03)',
+            'orange-sm': '0 4px 14px 0 rgba(255, 98, 0, 0.25)'
+          }
+        }
+      }
+    };
   </script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      -webkit-font-smoothing: antialiased;
+    }
+
     summary::-webkit-details-marker { display: none; }
     summary { list-style: none; }
     details[open] > summary .chevron-icon { transform: rotate(180deg); }
+
+    /* MODO ESCURO - Garantia Estrita de Contraste e Títulos Visíveis */
+    html.dark body, body.dark {
+      background-color: #0b1120 !important;
+      color: #cbd5e1 !important;
+    }
+
+    html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5,
+    html.dark .text-slate-900, html.dark .text-slate-800,
+    body.dark h1, body.dark h2, body.dark h3, body.dark h4, body.dark h5,
+    body.dark .text-slate-900, body.dark .text-slate-800 {
+      color: #f8fafc !important;
+    }
+
+    html.dark .text-slate-700, html.dark .text-slate-600,
+    body.dark .text-slate-700, body.dark .text-slate-600 {
+      color: #e2e8f0 !important;
+    }
+
+    html.dark .text-slate-500, html.dark .text-slate-400,
+    body.dark .text-slate-500, body.dark .text-slate-400 {
+      color: #94a3b8 !important;
+    }
+
+    html.dark .bg-white, body.dark .bg-white {
+      background-color: #151f32 !important;
+    }
+
+    html.dark .border-slate-200, html.dark .border-slate-300,
+    body.dark .border-slate-200, body.dark .border-slate-300 {
+      border-color: #293548 !important;
+    }
+
+    html.dark .bg-slate-50, html.dark .bg-slate-100,
+    body.dark .bg-slate-50, body.dark .bg-slate-100 {
+      background-color: #1e293b !important;
+    }
+
+    html.dark input, html.dark select, html.dark textarea,
+    body.dark input, body.dark select, body.dark textarea {
+      background-color: #1e293b !important;
+      border-color: #334155 !important;
+      color: #f8fafc !important;
+    }
+
+    /* Scrollbar sutil */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.5); }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans min-h-screen flex flex-col md:flex-row transition-colors duration-150">
-  <!-- Telas de Autenticação -->
-  <!-- 1. Loading Inicial -->
-  <div id="authLoadingScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 text-slate-200">
-    <div class="flex flex-col items-center gap-3">
-      <div class="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-      <p class="text-sm font-medium text-slate-400">Verificando acesso...</p>
+<body class="bg-[#f4f5f7] dark:bg-[#0b1120] text-slate-800 dark:text-slate-200 min-h-screen transition-colors duration-150">
+
+  <!-- ========================================== -->
+  <!-- 1. TELAS DE AUTENTICAÇÃO                    -->
+  <!-- ========================================== -->
+
+  <!-- Loading Inicial -->
+  <div id="authLoadingScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#000d3c] text-slate-200">
+    <div class="flex flex-col items-center gap-4">
+      <div class="w-14 h-14 rounded-[18px] bg-gradient-to-br from-[#001652] to-[#000d3c] border-2 border-[#ff6200] flex items-center justify-center shadow-lg">
+        <span class="text-xl font-black text-[#ffb800] tracking-tight">iaz</span>
+      </div>
+      <div class="h-8 w-8 animate-spin rounded-full border-3 border-[#ff6200] border-t-transparent"></div>
+      <p class="text-xs font-semibold text-slate-300 uppercase tracking-widest">JUD IAZ • Carregando...</p>
     </div>
   </div>
 
-  <!-- 2. Tela de Login -->
-  <div id="loginScreen" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4">
-    <div class="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900/90 p-8 text-center shadow-2xl backdrop-blur-md space-y-4">
-      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600/10 border border-blue-500/20 text-2xl shadow-inner">
-        ⚖️
+  <!-- Tela de Login -->
+  <div id="loginScreen" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-[#000d3c] p-4">
+    <div class="w-full max-w-sm rounded-[24px] border border-white/10 bg-[#001652]/90 p-8 text-center shadow-2xl backdrop-blur-md space-y-5">
+      <!-- Logo Squircle -->
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-[20px] bg-gradient-to-br from-[#001652] to-[#000d3c] border-2 border-[#ff6200] shadow-md">
+        <span class="text-2xl font-black tracking-tight text-[#ffb800]">iaz</span>
       </div>
       <div>
-        <h1 class="text-xl font-bold text-slate-100">IAZ Jud</h1>
-        <p class="text-xs text-blue-400 font-medium mt-0.5">Monitoramento Processual</p>
+        <h1 class="text-2xl font-black tracking-tight text-white">JUD IAZ</h1>
+        <p class="text-xs text-[#ffb800] font-semibold mt-0.5 uppercase tracking-wider">Monitoramento Processual</p>
       </div>
-      <p class="text-xs text-slate-400 leading-relaxed">
+      <p class="text-xs text-slate-300 leading-relaxed">
         Acesse os autos, movimentações e relatórios com sua conta Google autorizada.
       </p>
       <button id="btnLoginGoogle" onclick="entrarComGoogle()" 
-        class="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-semibold text-sm shadow transition duration-150 active:scale-[0.99]">
+        class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-sm shadow transition duration-150 active:scale-[0.99]">
         <svg class="h-4 w-4" viewBox="0 0 48 48" aria-hidden="true">
           <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
           <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
@@ -63,381 +157,509 @@
         </svg>
         <span>Entrar com Google</span>
       </button>
-      <div class="pt-2 border-t border-slate-800/80">
-        <p class="text-[11px] text-slate-500">🔒 Acesso restrito a usuários previamente liberados.</p>
+      <div class="pt-2 border-t border-white/10">
+        <p class="text-[11px] text-slate-400 font-medium">Acesso restrito a usuários previamente liberados.</p>
       </div>
     </div>
   </div>
 
-  <!-- 3. Tela de Acesso Negado -->
-  <div id="semAcessoScreen" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4">
-    <div class="w-full max-w-sm rounded-2xl border border-rose-500/30 bg-slate-900/90 p-8 text-center shadow-2xl backdrop-blur-md space-y-4">
-      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/10 border border-rose-500/20 text-2xl text-rose-400">
-        🛡️
+  <!-- Tela de Acesso Negado -->
+  <div id="semAcessoScreen" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-[#000d3c] p-4">
+    <div class="w-full max-w-sm rounded-[24px] border border-rose-500/30 bg-[#001652]/90 p-8 text-center shadow-2xl backdrop-blur-md space-y-4">
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-[18px] bg-rose-500/10 border border-rose-500/30 text-2xl text-rose-400">
+        🚫
       </div>
       <div>
-        <h2 class="text-lg font-bold text-slate-100">Acesso Não Autorizado</h2>
-        <p class="text-xs text-rose-400 font-medium mt-0.5">Usuário não cadastrado ou inativo</p>
+        <h2 class="text-lg font-bold text-white">Acesso Não Autorizado</h2>
+        <p class="text-xs text-rose-300 font-semibold mt-0.5">Usuário não cadastrado ou inativo</p>
       </div>
       <p class="text-xs text-slate-300 leading-relaxed">
-        A conta Google <b id="semAcessoEmail" class="text-amber-400 font-mono">email@gmail.com</b> foi autenticada, mas ainda não está na lista de usuários liberados.
+        A conta Google <b id="semAcessoEmail" class="text-[#ffb800] font-mono">email@gmail.com</b> foi autenticada, mas ainda não está na lista de usuários liberados.
       </p>
-      <p class="text-[11px] text-slate-500">
+      <p class="text-[11px] text-slate-400">
         Solicite a liberação do seu e-mail a um administrador do sistema.
       </p>
       <button onclick="sairDoSistema()" 
-        class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold shadow transition">
-        <span>🚪</span> Usar outra conta Google
+        class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold shadow transition">
+        <span>🔄</span> Usar outra conta Google
       </button>
     </div>
   </div>
 
-  <!-- Container Principal da Aplicação -->
-  <div id="appLayout" class="hidden min-h-screen flex flex-col md:flex-row w-full">
+  <!-- ========================================== -->
+  <!-- 2. LAYOUT PRINCIPAL DO APP (PADRÃO IAZ)    -->
+  <!-- ========================================== -->
+  <div id="appLayout" class="hidden min-h-screen flex flex-col w-full">
 
-  <!-- Overlay Mobile -->
-  <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden md:hidden"></div>
+    <!-- TOPO AZUL-MARINHO (bg-[#000d3c] text-white pb-7) -->
+    <header class="bg-[#000d3c] text-white pt-3 pb-8 px-4 sm:px-6 shadow-md relative z-30">
+      <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
+        
+        <!-- Esquerda: Avatar + Dropdown -->
+        <div class="relative">
+          <button id="btnUserAvatar" onclick="toggleUserDropdown(event)" 
+            class="flex items-center gap-2 p-1 rounded-full hover:bg-white/10 transition group focus:outline-none focus:ring-2 focus:ring-[#ff6200]"
+            title="Menu do Usuário">
+            <img id="userAvatar" src="" alt="Avatar" 
+              class="h-9 w-9 rounded-full object-cover ring-2 ring-[#ff6200]/60 group-hover:ring-[#ff6200] bg-slate-800 transition"
+              onerror="this.src='https://ui-avatars.com/api/?name=U&background=ff6200&color=fff'">
+            <span id="userPillNome" class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full bg-white/10 text-xs font-semibold text-slate-100 group-hover:bg-white/20 transition">
+              Usuário
+            </span>
+          </button>
 
-  <!-- Barra Lateral (Sidebar) -->
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
-    <div>
-      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <img id="sideHeaderLogo" src="" alt="Logo" onerror="this.classList.add('hidden')" class="hidden h-9 w-auto max-w-[48px] object-contain rounded bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800">
-          <div class="min-w-0">
-            <h1 class="font-bold text-sm text-slate-900 dark:text-slate-100 leading-tight">IAZ Jud</h1>
-            <p id="sideHeaderEmpresa" class="text-[11px] text-blue-600 dark:text-blue-400 font-medium truncate">Monitoramento Supabase</p>
-          </div>
-        </div>
-        <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg p-1">✕</button>
-      </div>
-
-      <nav class="p-3 space-y-1.5 text-xs font-medium">
-        <button onclick="fecharSidebar()" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-600/10 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 text-left">
-          <span>📁</span>
-          <span>Painel de Processos</span>
-        </button>
-
-        <button onclick="openEmpresaModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition">
-          <span>🏢</span>
-          <span>Cadastro de Empresa</span>
-        </button>
-
-        <button onclick="openProcessModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition">
-          <span>⚖️</span>
-          <span>Cadastro de Processo</span>
-        </button>
-
-        <button id="btnMenuUsuarios" onclick="openUsuariosModal(); fecharSidebar();" class="hidden w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition">
-          <span>👥</span>
-          <span>Usuários Liberados</span>
-        </button>
-
-        <button onclick="openConfigModal(); fecharSidebar();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition">
-          <span>⚙️</span>
-          <span>Configurações</span>
-        </button>
-      </nav>
-    </div>
-
-    <!-- Perfil do Usuário Logado -->
-    <div class="p-3 border-t border-slate-200 dark:border-slate-800">
-      <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
-        <div class="flex items-center gap-2 min-w-0">
-          <img id="userAvatar" src="" alt="Avatar" onerror="this.src='https://ui-avatars.com/api/?name=U&background=2563eb&color=fff'" class="h-8 w-8 rounded-full border border-slate-200 dark:border-slate-700 object-cover bg-slate-200 dark:bg-slate-800">
-          <div class="min-w-0">
-            <p id="userNome" class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">Usuário</p>
-            <div class="flex items-center gap-1">
-              <span id="userBadgePapel" class="text-[9px] px-1.5 py-0.2 rounded font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">Admin</span>
-              <p id="userEmail" class="text-[10px] text-slate-500 truncate max-w-[85px]">email</p>
+          <!-- Dropdown Flutuante do Usuário -->
+          <div id="userDropdownMenu" 
+            class="hidden absolute left-0 mt-2 w-72 rounded-2xl bg-white dark:bg-[#151f32] text-slate-800 dark:text-slate-100 shadow-2xl border border-slate-200/80 dark:border-[#293548] p-3 z-50 transition-all text-xs">
+            <!-- Header do Usuário -->
+            <div class="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#1e293b] rounded-xl mb-2">
+              <div class="h-10 w-10 rounded-full bg-[#001652] text-[#ffb800] font-black text-sm flex items-center justify-center border border-[#ff6200]/40 flex-shrink-0">
+                iaz
+              </div>
+              <div class="min-w-0 flex-1">
+                <p id="userNome" class="font-bold text-slate-900 dark:text-white truncate">Usuário</p>
+                <p id="userEmail" class="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">email</p>
+                <div class="mt-1 flex items-center gap-1.5">
+                  <span id="userBadgePapel" class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-[#ff6200]/10 text-[#ec7000] border border-[#ff6200]/20">
+                    Operador
+                  </span>
+                  <span class="text-[10px] text-slate-400 font-mono">v2.4.0</span>
+                </div>
+              </div>
             </div>
+
+            <div class="space-y-1">
+              <!-- Menu Admin: Usuários Liberados -->
+              <button id="btnMenuUsuarios" onclick="openUsuariosModal(); fecharUserDropdown();" 
+                class="hidden w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-[#ff6200]/10 hover:text-[#ec7000] dark:hover:bg-[#ff6200]/15 dark:hover:text-[#ffb800] font-medium transition text-left">
+                <span class="text-sm">👥</span>
+                <span>Usuários Liberados (Admin)</span>
+              </button>
+
+              <!-- Gerenciar Empresas -->
+              <button onclick="openEmpresaModal(); fecharUserDropdown();" 
+                class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition text-left">
+                <span class="text-sm">🏢</span>
+                <span>Gerenciar Empresas</span>
+              </button>
+
+              <!-- Configurações & API -->
+              <button onclick="openConfigModal(); fecharUserDropdown();" 
+                class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition text-left">
+                <span class="text-sm">⚙️</span>
+                <span>Configurações & Tema</span>
+              </button>
+
+              <!-- Instalar PWA / App -->
+              <button id="btnInstalarApp" onclick="instalarPwaApp(); fecharUserDropdown();" 
+                class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition text-left">
+                <span class="text-sm">📱</span>
+                <span>Instalar Aplicativo (PWA)</span>
+              </button>
+            </div>
+
+            <!-- Divisor -->
+            <div class="my-2 border-t border-slate-200/80 dark:border-slate-800"></div>
+
+            <!-- Botão Sair -->
+            <button onclick="sairDoSistema()" 
+              class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold transition text-left">
+              <span class="text-sm">🚪</span>
+              <span>Sair da Conta</span>
+            </button>
           </div>
         </div>
-        <button onclick="sairDoSistema()" title="Sair da Conta" class="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition text-sm">
-          🚪
-        </button>
-      </div>
-    </div>
 
-    <!-- Sincronização Geral -->
-    <div class="p-3 border-t border-slate-200 dark:border-slate-800">
-      <button id="btnSideSync" onclick="sincronizarDataJud()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow transition">
-        <span id="sideSyncIcon">⚡</span>
-        <span id="sideSyncText">Checar DataJud (Todos)</span>
-      </button>
-    </div>
-  </aside>
-
-  <!-- Área Principal -->
-  <div class="flex-1 md:ml-64 flex flex-col min-w-0">
-    <header class="bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-sm">
-      <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
-        <div class="flex items-center gap-3">
-          <button onclick="toggleSidebar()" class="md:hidden p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-            ☰
-          </button>
-          <img id="topHeaderLogo" src="" alt="Logo" onerror="this.classList.add('hidden')" class="hidden md:block h-8 w-auto max-w-[42px] object-contain rounded bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800">
-          <div>
-            <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100">Painel de Processos</h2>
-            <p id="topHeaderSubtitulo" class="text-[11px] text-slate-500 dark:text-slate-400">Visão Geral dos Autos</p>
+        <!-- Centro: Brand JUD IAZ (Sem slogans no cabeçalho) -->
+        <div class="flex items-center gap-2.5 select-none cursor-pointer" onclick="setTelaAtiva('processos')">
+          <div class="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#001652] to-[#000d3c] border border-[#ff6200] flex items-center justify-center shadow-sm">
+            <span class="text-[11px] font-black tracking-tight text-[#ffb800]">iaz</span>
           </div>
+          <span class="text-base sm:text-lg font-black tracking-tight text-white">JUD IAZ</span>
         </div>
 
-        <div class="flex items-center gap-2">
-          <button onclick="openEmpresaModal()" class="hidden sm:flex bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium px-2.5 py-1.5 rounded-lg items-center gap-1">
-            <span>🏢</span> Empresa
+        <!-- Direita: Ícones Redondos (Buscar · Ajuda · Tema · Sincronizar) -->
+        <div class="flex items-center gap-1 sm:gap-1.5">
+          <!-- 1. Buscar (Lupa) -->
+          <button id="btnNavBuscar" onclick="alternarBarraBusca()" 
+            class="p-2 rounded-full hover:bg-white/10 text-slate-200 transition" 
+            title="Buscar Processos">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
           </button>
-          <button onclick="openProcessModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-1 shadow">
-            <span>+</span> Novo Processo
+
+          <!-- 2. Ajuda (?) em Dourado #ffb800 -->
+          <button onclick="abrirGuiaAjuda()" 
+            class="p-2 rounded-full hover:bg-white/10 text-[#ffb800] transition" 
+            title="Como usar esta tela">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </button>
+
+          <!-- 3. Tema (Lua/Sol) -->
+          <button id="btnNavTema" onclick="alternarTemaRapido()" 
+            class="p-2 rounded-full hover:bg-white/10 text-slate-200 transition" 
+            title="Alternar Tema Claro / Escuro">
+            <svg id="iconTemaLua" class="w-4 h-4 hidden" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <svg id="iconTemaSol" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </button>
+
+          <!-- 4. Sincronizar (Raio / Sync) -->
+          <button id="btnNavSync" onclick="sincronizarDataJud()" 
+            class="p-2 rounded-full hover:bg-white/10 text-slate-200 transition" 
+            title="Sincronizar DataJud (Todos)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
           </button>
         </div>
       </div>
     </header>
 
-    <main class="max-w-5xl w-full mx-auto px-4 py-4 space-y-4 flex-1">
-      
-      <!-- Cartões de Resumo / Contadores -->
-      <div class="grid grid-cols-3 gap-2 sm:gap-3">
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-sm flex items-center justify-between">
+    <!-- FOLHA CURVADA SOBREPOSTA (-mt-4 rounded-t-[26px] bg-[#f4f5f7]) -->
+    <main class="-mt-4 rounded-t-[26px] bg-[#f4f5f7] dark:bg-[#0b1120] min-h-[calc(100vh-80px)] px-3.5 sm:px-6 pt-5 pb-16 transition-colors duration-200 z-10 flex-1">
+      <div class="max-w-5xl mx-auto space-y-4">
+
+        <!-- CABEÇALHO DA TELA: TÍTULO + BOTÃO DE OLHO -->
+        <div class="flex items-center justify-between pb-1">
           <div>
-            <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Ativos</p>
-            <h3 id="countAtivos" class="text-lg sm:text-xl font-bold text-emerald-600 dark:text-emerald-400">0</h3>
+            <h2 id="screenTitle" class="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
+              Processos Judiciais
+            </h2>
+            <p id="screenSubtitle" class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              Monitoramento integrado Supabase e DataJud (CNJ)
+            </p>
           </div>
-          <span class="text-xl sm:text-2xl">🟢</span>
-        </div>
 
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Suspensos</p>
-            <h3 id="countSuspensos" class="text-lg sm:text-xl font-bold text-amber-600 dark:text-amber-400">0</h3>
-          </div>
-          <span class="text-xl sm:text-2xl">🟡</span>
-        </div>
-
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Arquivados</p>
-            <h3 id="countArquivados" class="text-lg sm:text-xl font-bold text-rose-600 dark:text-rose-400">0</h3>
-          </div>
-          <span class="text-xl sm:text-2xl">🔴</span>
-        </div>
-      </div>
-
-      <!-- Filtros e Exportação -->
-      <div class="flex flex-col sm:flex-row gap-2">
-        <select id="empresaFilter" onchange="aoFiltrarEmpresa()" 
-          class="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm sm:w-52 font-medium">
-          <option value="">Todas as Empresas</option>
-        </select>
-
-        <div class="flex gap-2 flex-1">
-          <input type="text" id="searchInput" oninput="renderProcessos()" placeholder="Buscar por apelido, processo, vara, partes ou e-mail..." 
-            class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-lg text-xs sm:text-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
-          
-          <button onclick="carregarProcessos()" title="Atualizar Lista" class="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-800 shadow-sm text-slate-600 dark:text-slate-300">
-            🔄
-          </button>
-
-          <button onclick="exportarExcel()" title="Exportar para Excel (.xlsx)" 
-            class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm transition">
-            <span>📊</span> <span class="hidden sm:inline">Excel</span>
-          </button>
-
-          <button onclick="exportarPDF()" title="Exportar Relatório PDF" 
-            class="px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm transition">
-            <span>📄</span> <span class="hidden sm:inline">PDF</span>
+          <!-- Botão de Olho (Privacidade para ocultar/mostrar valores com ••••) -->
+          <button id="btnEyeToggle" onclick="toggleModoPrivacidade()" 
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] text-slate-600 dark:text-slate-300 hover:text-[#ff6200] dark:hover:text-[#ff6200] text-xs font-semibold shadow-2xs transition"
+            title="Ocultar/Exibir Contadores e Valores">
+            <svg id="eyeIconOpen" class="w-4 h-4 text-[#ff6200]" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg id="eyeIconClosed" class="w-4 h-4 text-slate-400 hidden" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+            <span id="eyeText" class="hidden sm:inline">Valores</span>
           </button>
         </div>
-      </div>
 
-      <div id="processosContainer" class="space-y-3">
-        <div class="text-center py-12 text-slate-500 text-sm">Carregando processos...</div>
+        <!-- MENU DE ATALHOS EM SQUIRCLES (Navegação Principal visível em TODAS as telas) -->
+        <nav class="flex items-center justify-between gap-1 sm:gap-3 py-1 select-none overflow-x-hidden" aria-label="Navegação rápida">
+          <!-- 1. Processos (Ativo por padrão) -->
+          <button id="tab-processos" onclick="setTelaAtiva('processos')" 
+            class="flex-1 sm:w-[68px] sm:flex-initial flex flex-col items-center group focus:outline-none transition-all duration-200">
+            <div id="sq-processos" class="w-11 h-11 sm:w-13 sm:h-13 rounded-[16px] bg-[#ff6200] text-white scale-105 shadow-orange-sm ring-2 ring-[#ff6200]/25 ring-offset-2 dark:ring-offset-[#0b1120] flex items-center justify-center transition-all duration-200">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </div>
+            <span id="lbl-processos" class="text-[10px] sm:text-[11px] font-bold text-[#ec7000] mt-1 text-center truncate w-full">Processos</span>
+            <div id="ind-processos" class="h-1 w-5 rounded-full bg-[#ff6200] mt-0.5"></div>
+          </button>
+
+          <!-- 2. Novo Processo -->
+          <button id="tab-novo" onclick="openProcessModal()" 
+            class="flex-1 sm:w-[68px] sm:flex-initial flex flex-col items-center group focus:outline-none transition-all duration-200">
+            <div id="sq-novo" class="w-11 h-11 sm:w-13 sm:h-13 rounded-[16px] bg-white dark:bg-[#151f32] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-[#293548] group-hover:border-[#ff6200] group-hover:text-[#ff6200] flex items-center justify-center transition-all duration-200 shadow-2xs">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </div>
+            <span id="lbl-novo" class="text-[10px] sm:text-[11px] font-medium text-slate-600 dark:text-slate-400 group-hover:text-[#ec7000] mt-1 text-center truncate w-full">Novo</span>
+            <div id="ind-novo" class="h-1 w-5 rounded-full bg-transparent mt-0.5"></div>
+          </button>
+
+          <!-- 3. Empresas -->
+          <button id="tab-empresas" onclick="openEmpresaModal()" 
+            class="flex-1 sm:w-[68px] sm:flex-initial flex flex-col items-center group focus:outline-none transition-all duration-200">
+            <div id="sq-empresas" class="w-11 h-11 sm:w-13 sm:h-13 rounded-[16px] bg-white dark:bg-[#151f32] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-[#293548] group-hover:border-[#ff6200] group-hover:text-[#ff6200] flex items-center justify-center transition-all duration-200 shadow-2xs">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                <line x1="9" y1="22" x2="9" y2="22.01"></line>
+                <line x1="15" y1="22" x2="15" y2="22.01"></line>
+                <line x1="9" y1="6" x2="9" y2="6.01"></line>
+                <line x1="15" y1="6" x2="15" y2="6.01"></line>
+                <line x1="9" y1="10" x2="9" y2="10.01"></line>
+                <line x1="15" y1="10" x2="15" y2="10.01"></line>
+                <line x1="9" y1="14" x2="9" y2="14.01"></line>
+                <line x1="15" y1="14" x2="15" y2="14.01"></line>
+                <line x1="9" y1="18" x2="9" y2="18.01"></line>
+                <line x1="15" y1="18" x2="15" y2="18.01"></line>
+              </svg>
+            </div>
+            <span id="lbl-empresas" class="text-[10px] sm:text-[11px] font-medium text-slate-600 dark:text-slate-400 group-hover:text-[#ec7000] mt-1 text-center truncate w-full">Empresas</span>
+            <div id="ind-empresas" class="h-1 w-5 rounded-full bg-transparent mt-0.5"></div>
+          </button>
+
+          <!-- 4. Relatórios -->
+          <button id="tab-relatorios" onclick="openRelatoriosModal()" 
+            class="flex-1 sm:w-[68px] sm:flex-initial flex flex-col items-center group focus:outline-none transition-all duration-200">
+            <div id="sq-relatorios" class="w-11 h-11 sm:w-13 sm:h-13 rounded-[16px] bg-white dark:bg-[#151f32] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-[#293548] group-hover:border-[#ff6200] group-hover:text-[#ff6200] flex items-center justify-center transition-all duration-200 shadow-2xs">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+            </div>
+            <span id="lbl-relatorios" class="text-[10px] sm:text-[11px] font-medium text-slate-600 dark:text-slate-400 group-hover:text-[#ec7000] mt-1 text-center truncate w-full">Relatórios</span>
+            <div id="ind-relatorios" class="h-1 w-5 rounded-full bg-transparent mt-0.5"></div>
+          </button>
+
+          <!-- 5. Admin (Usuários) -->
+          <button id="tab-admin" onclick="openUsuariosModal()" 
+            class="flex-1 sm:w-[68px] sm:flex-initial flex flex-col items-center group focus:outline-none transition-all duration-200">
+            <div id="sq-admin" class="w-11 h-11 sm:w-13 sm:h-13 rounded-[16px] bg-white dark:bg-[#151f32] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-[#293548] group-hover:border-[#ff6200] group-hover:text-[#ff6200] flex items-center justify-center transition-all duration-200 shadow-2xs">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </div>
+            <span id="lbl-admin" class="text-[10px] sm:text-[11px] font-medium text-slate-600 dark:text-slate-400 group-hover:text-[#ec7000] mt-1 text-center truncate w-full">Admin</span>
+            <div id="ind-admin" class="h-1 w-5 rounded-full bg-transparent mt-0.5"></div>
+          </button>
+        </nav>
+
+        <!-- SELETOR DE PERÍODO EM LINHA ÚNICA (Componente Padrão IAZ) -->
+        <div class="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] shadow-2xs text-xs">
+          <div class="flex items-center gap-1.5">
+            <button onclick="ajustarPeriodo(-1)" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold" title="Mês Anterior">‹</button>
+            <span id="labelPeriodo" class="font-semibold text-slate-800 dark:text-slate-200 text-xs px-1">Mês Atual</span>
+            <button onclick="ajustarPeriodo(1)" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold" title="Próximo Mês">›</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="definirPeriodoMesAtual()" class="px-2.5 py-1 rounded-full bg-[#ff6200]/10 hover:bg-[#ff6200]/20 text-[#ec7000] font-semibold text-[11px] transition">
+              Mês Atual
+            </button>
+            <button onclick="limparFiltroPeriodo()" id="btnTodosPeriodo" class="px-2 py-1 rounded-full text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-[11px] font-medium transition">
+              Todos
+            </button>
+          </div>
+        </div>
+
+        <!-- CARDS DE RESUMO (Sem verde no app: Azul, Dourado e Rosa) -->
+        <div class="grid grid-cols-3 gap-2 sm:gap-3">
+          <!-- Card Ativos (Azul #2563eb / blue-600) -->
+          <div class="bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] p-3 sm:p-3.5 rounded-2xl shadow-2xs flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ativos</p>
+              <h3 id="countAtivos" class="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">0</h3>
+            </div>
+            <div class="h-8 w-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">
+              ⚡
+            </div>
+          </div>
+
+          <!-- Card Suspensos (Dourado #ffb800) -->
+          <div class="bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] p-3 sm:p-3.5 rounded-2xl shadow-2xs flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Suspensos</p>
+              <h3 id="countSuspensos" class="text-xl sm:text-2xl font-bold text-[#ffb800] dark:text-[#ffc933]">0</h3>
+            </div>
+            <div class="h-8 w-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-[#ffb800] flex items-center justify-center font-bold text-xs">
+              ⏸️
+            </div>
+          </div>
+
+          <!-- Card Arquivados (Rosa rose-600) -->
+          <div class="bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] p-3 sm:p-3.5 rounded-2xl shadow-2xs flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Arquivados</p>
+              <h3 id="countArquivados" class="text-xl sm:text-2xl font-bold text-rose-600 dark:text-rose-400">0</h3>
+            </div>
+            <div class="h-8 w-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-xs">
+              📁
+            </div>
+          </div>
+        </div>
+
+        <!-- BARRA DE BUSCA EXPANSÍVEL (Ativada pela Lupa do Topo ou sempre disponível) -->
+        <div id="barraBuscaContainer" class="p-3 rounded-2xl bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] shadow-2xs space-y-2">
+          <div class="flex flex-col sm:flex-row gap-2">
+            <!-- Seletor de Empresa (Combo) -->
+            <select id="empresaFilter" onchange="aoFiltrarEmpresa()" 
+              class="px-3 py-2 bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-slate-800 dark:text-slate-200 rounded-xl text-xs sm:w-56 font-semibold focus:outline-none focus:ring-2 focus:ring-[#ff6200]">
+              <option value="">🏢 Todas as Empresas</option>
+            </select>
+
+            <!-- Campo de Busca -->
+            <div class="flex gap-2 flex-1">
+              <div class="relative flex-1">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  🔍
+                </span>
+                <input type="text" id="searchInput" oninput="renderProcessos()" 
+                  placeholder="Buscar apelido, número CNJ, vara, partes..." 
+                  class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#ff6200]">
+              </div>
+
+              <!-- Botão Recarregar Dados -->
+              <button onclick="carregarProcessos()" title="Recarregar do Supabase" 
+                class="p-2 bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] rounded-xl text-slate-600 dark:text-slate-300 hover:text-[#ff6200] hover:bg-slate-100 dark:hover:bg-slate-800 shadow-2xs transition">
+                🔄
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- LISTA PRINCIPAL DE PROCESSOS -->
+        <div id="processosContainer" class="space-y-3">
+          <div class="text-center py-12 text-slate-500 dark:text-slate-400 text-xs">
+            Carregando processos do Supabase...
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
 
-  <!-- MODAL: Gerenciar Empresa -->
-  <div id="empresaModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-        <div>
-          <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Gerenciar Empresas</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Cadastre suas filiais ou clientes corporativos</p>
+  <!-- ========================================== -->
+  <!-- 3. MODAIS DO SISTEMA                       -->
+  <!-- ========================================== -->
+
+  <!-- MODAL: Ajuda Contextual (?) -->
+  <div id="ajudaModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-[#293548]">
+        <div class="flex items-center gap-2">
+          <span class="text-lg text-[#ffb800]">💡</span>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Como usar o JUD IAZ</h3>
         </div>
-        <button onclick="closeEmpresaModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1">✕</button>
+        <button onclick="fecharGuiaAjuda()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold">✕</button>
       </div>
-
-      <form id="empresaForm" onsubmit="salvarEmpresa(event)" class="space-y-3 bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-        <h4 class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">Nova Empresa</h4>
-        <div class="grid grid-cols-3 gap-2">
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Código (Auto)</label>
-            <input type="text" id="campoEmpCodigo" readonly placeholder="Gerando..."
-              class="w-full px-2.5 py-1.5 bg-slate-200 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-blue-600 dark:text-blue-400 font-mono cursor-not-allowed select-none focus:outline-none">
-          </div>
-          <div class="col-span-2">
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nome da Empresa*</label>
-            <input type="text" id="campoEmpNome" required placeholder="Ex: IAZ Transportes LTDA"
-              class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
-          </div>
+      <div class="space-y-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+        <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548]">
+          <p class="font-bold text-[#ec7000] mb-0.5">☁️ Monitoramento em Nuvem</p>
+          <p>Os processos são consultados no DataJud oficial do CNJ e atualizados no Supabase a cada 2 horas via GitHub Actions.</p>
         </div>
-
-        <div class="space-y-2">
-          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">Logotipo da Empresa</label>
-          <div>
-            <label class="block text-[11px] text-slate-500 mb-1">Subir do dispositivo:</label>
-            <input type="file" id="campoEmpFile" accept="image/*" onchange="processarArquivoLogo(event)"
-              class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-700 dark:file:text-slate-200 hover:file:bg-slate-300 dark:hover:file:bg-slate-700 cursor-pointer">
-          </div>
-
-          <div>
-            <label class="block text-[11px] text-slate-500 mb-1">Ou cole a URL direta / link do Google Drive:</label>
-            <input type="text" id="campoEmpLogo" oninput="aoDigitarLogoUrl(this.value)" placeholder="https://..."
-              class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none font-mono">
-          </div>
-
-          <div id="logoPreviewContainer" class="hidden mt-2 p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <img id="logoPreviewImg" src="" class="h-8 w-auto max-w-[60px] object-contain rounded bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-700">
-              <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">Logotipo pronto</span>
-            </div>
-            <button type="button" onclick="limparLogoForm()" class="text-xs text-red-500 hover:text-red-400">Remover</button>
-          </div>
+        <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548]">
+          <p class="font-bold text-[#ec7000] mb-0.5">⚡ Consulta em Tempo Real</p>
+          <p>Clique em <b>⚡ Atualizar</b> em qualquer processo para buscar movimentações instantâneas sem bloqueio de CORS.</p>
         </div>
-
-        <div class="flex justify-end pt-1">
-          <button type="submit" id="btnSalvarEmp" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium shadow">
-            Adicionar Empresa
-          </button>
-        </div>
-      </form>
-
-      <div>
-        <h4 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Empresas Cadastradas</h4>
-        <div id="empresasListaContainer" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-          <p class="text-xs text-slate-500 py-3 text-center">Nenhuma empresa encontrada.</p>
+        <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548]">
+          <p class="font-bold text-[#ec7000] mb-0.5">👁️ Modo Privacidade</p>
+          <p>Use o botão de olho no topo da folha para ocultar valores e contadores confidenciais em apresentações.</p>
         </div>
       </div>
+      <button onclick="fecharGuiaAjuda()" class="w-full py-2.5 rounded-xl bg-[#ff6200] hover:bg-[#ec7000] text-white font-bold text-xs shadow-sm transition">
+        Entendido
+      </button>
     </div>
   </div>
 
-  <!-- MODAL: Gerenciar Usuários Liberados -->
-  <div id="usuariosModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-xl rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-        <div>
-          <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Usuários Liberados</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Controle quem pode acessar o IAZ Jud via login Google</p>
+  <!-- MODAL: Relatórios e Exportação -->
+  <div id="relatoriosModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-[#293548]">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">📊</span>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Relatórios & Exportação</h3>
         </div>
-        <button onclick="closeUsuariosModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1">✕</button>
+        <button onclick="fecharRelatoriosModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold">✕</button>
       </div>
-
-      <!-- Formulário: Adicionar / Liberar Usuário -->
-      <form id="usuarioForm" onsubmit="salvarUsuarioLiberado(event)" class="space-y-3 bg-slate-50 dark:bg-slate-950/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
-        <h4 id="usuarioFormTitulo" class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">Liberar Novo Usuário</h4>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">E-mail Google*</label>
-            <input type="email" id="campoUserEmail" required placeholder="exemplo@gmail.com"
-              class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nome Completo</label>
-            <input type="text" id="campoUserNome" placeholder="Ex: Dr. Carlos Silva"
-              class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Papel / Permissão</label>
-            <select id="campoUserPapel" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
-              <option value="solicitante">Operador (Acesso Padrão)</option>
-              <option value="admin">Administrador (Total)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Status de Acesso</label>
-            <select id="campoUserAtivo" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
-              <option value="true">Liberado (Ativo)</option>
-              <option value="false">Bloqueado (Inativo)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-2 pt-1">
-          <button type="button" onclick="limparFormUsuario()" id="btnCancelarEditUser" class="hidden px-3 py-1.5 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-            Cancelar Edição
-          </button>
-          <button type="submit" id="btnSalvarUser" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium shadow">
-            Salvar Usuário
-          </button>
-        </div>
-      </form>
-
-      <!-- Lista de Usuários Cadastrados -->
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <h4 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Usuários Cadastrados</h4>
-          <span id="totalUsuariosBadge" class="text-[10px] text-slate-400 font-mono">0 usuários</span>
-        </div>
-        <div id="usuariosListaContainer" class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-          <p class="text-xs text-slate-500 py-3 text-center">Carregando usuários...</p>
-        </div>
+      <p class="text-xs text-slate-600 dark:text-slate-300">
+        Exporte a relação completa de processos com dados de partes, varas, movimentações e prazos calculados:
+      </p>
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <button onclick="exportarExcel(); fecharRelatoriosModal();" 
+          class="flex flex-col items-center gap-2 p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/80 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition group">
+          <span class="text-2xl">📋</span>
+          <span class="font-bold text-xs text-blue-700 dark:text-blue-300">Exportar Excel (.xlsx)</span>
+        </button>
+        <button onclick="exportarPDF(); fecharRelatoriosModal();" 
+          class="flex flex-col items-center gap-2 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/80 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition group">
+          <span class="text-2xl">📄</span>
+          <span class="font-bold text-xs text-rose-700 dark:text-rose-300">Exportar PDF (.pdf)</span>
+        </button>
       </div>
+      <button onclick="fecharRelatoriosModal()" class="w-full py-2 rounded-xl border border-slate-200 dark:border-[#293548] text-slate-600 dark:text-slate-400 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+        Fechar
+      </button>
     </div>
   </div>
 
   <!-- MODAL: Adicionar / Editar Processo -->
   <div id="processModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
-      <h3 id="modalTitle" class="text-base font-bold text-slate-900 dark:text-slate-100 mb-4">Novo Processo</h3>
-      <form id="processForm" onsubmit="salvarProcesso(event)" class="space-y-3">
+    <div class="bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-[#293548] mb-4">
+        <h3 id="modalTitle" class="text-sm font-bold text-slate-900 dark:text-white">Novo Processo</h3>
+        <button onclick="closeProcessModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold">✕</button>
+      </div>
+
+      <form id="processForm" onsubmit="salvarProcesso(event)" class="space-y-3 text-xs">
         <input type="hidden" id="formMode" value="add">
         
         <div>
-          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Empresa Vinculada*</label>
-          <select id="campoEmpresa" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+          <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Empresa Vinculada*</label>
+          <select id="campoEmpresa" required class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#ff6200] outline-none">
             <option value="">Selecione uma empresa...</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Número do Processo (CNJ)*</label>
+          <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Número do Processo (CNJ)*</label>
           <input type="text" id="campoProcesso" required oninput="aoDigitarProcesso(this.value)" placeholder="0000000-00.0000.0.00.0000"
-            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 outline-none font-mono">
+            class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-slate-800 dark:text-slate-100 font-mono focus:ring-2 focus:ring-[#ff6200] outline-none">
         </div>
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Apelido/Identificador</label>
-            <input type="text" id="campoApelido" placeholder="Ex: Causa Cível"
-              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Apelido / Identificador</label>
+            <input type="text" id="campoApelido" placeholder="Ex: Causa Cível Principal"
+              class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#ff6200] outline-none">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tribunal (Automático)</label>
-            <input type="text" id="campoTribunal" placeholder="TJCE, TRF5..."
-              class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Tribunal (Auto CNJ)</label>
+            <input type="text" id="campoTribunal" placeholder="TJCE, TRT7..."
+              class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#ff6200] outline-none">
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tipo de Processo</label>
-            <select id="campoTipo" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
-              <option value="Cível">Cível</option>
-              <option value="Trabalhista">Trabalhista</option>
-              <option value="Criminal">Criminal</option>
-              <option value="Tributário">Tributário</option>
-              <option value="Previdenciário">Previdenciário</option>
-              <option value="Eleitoral">Eleitoral</option>
-              <option value="Outro">Outro</option>
-            </select>
+            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Tipo de Processo</label>
+            <input type="text" id="campoTipo" list="listaTiposProcesso" placeholder="Selecione ou digite..."
+              class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#ff6200] outline-none">
+            <datalist id="listaTiposProcesso">
+              <option value="Cível">
+              <option value="Trabalhista">
+              <option value="Criminal">
+              <option value="Tributário">
+              <option value="Previdenciário">
+              <option value="Eleitoral">
+              <option value="Outro">
+            </datalist>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Status</label>
-            <select id="campoStatus" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Status</label>
+            <select id="campoStatus" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#ff6200] outline-none">
               <option value="Ativo">Ativo</option>
               <option value="Arquivado">Arquivado</option>
               <option value="Suspenso">Suspenso</option>
@@ -445,77 +667,251 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Reclamante (Autor)</label>
+            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Reclamante (Autor)</label>
             <input type="text" id="campoReclamante" placeholder="DataJud ou manual"
-              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+              class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#ff6200] outline-none">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Reclamado (Réu)</label>
+            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Reclamado (Réu)</label>
             <input type="text" id="campoReclamado" placeholder="DataJud ou manual"
-              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+              class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#ff6200] outline-none">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Vara / Unidade Judiciária</label>
-          <input type="text" id="campoVara" placeholder="Ex: 2ª Vara Cível de Fortaleza"
-            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+          <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Vara / Unidade Judiciária</label>
+          <input type="text" id="campoVara" placeholder="Ex: 2ª Vara Cível da Comarca de Fortaleza"
+            class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#ff6200] outline-none">
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">E-mails de Notificação</label>
+          <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">E-mails de Notificação</label>
           <input type="text" id="campoEmail" placeholder="advogado@empresa.com"
-            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+            class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#ff6200] outline-none">
         </div>
 
-        <div class="flex justify-end gap-2 pt-4">
-          <button type="button" onclick="closeProcessModal()" class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Cancelar</button>
-          <button type="submit" id="btnSubmitForm" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium shadow">Salvar</button>
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200/80 dark:border-[#293548]">
+          <button type="button" onclick="closeProcessModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-[#293548] text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Cancelar
+          </button>
+          <button type="submit" id="btnSubmitForm" class="px-5 py-2 rounded-xl bg-[#ff6200] hover:bg-[#ec7000] text-white font-bold shadow-sm transition">
+            Salvar Processo
+          </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: Configurações & Tema -->
-  <div id="configModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4">
-      <div>
-        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">Configurações do Sistema</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Gerencie tema e integração com Supabase / Apps Script.</p>
+  <!-- MODAL: Gerenciar Empresas -->
+  <div id="empresaModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-[#293548]">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Gerenciar Empresas</h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">Cadastre suas filiais ou clientes corporativos</p>
+        </div>
+        <button onclick="closeEmpresaModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold">✕</button>
       </div>
 
-      <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Aparência (Tema)</label>
-        <div class="grid grid-cols-2 gap-2">
-          <button type="button" onclick="alterarTema('dark')" id="btnTemaDark" 
-            class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition">
-            <span>🌙</span> Modo Escuro
-          </button>
-          <button type="button" onclick="alterarTema('light')" id="btnTemaLight" 
-            class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition">
-            <span>☀️</span> Modo Claro
+      <form id="empresaForm" onsubmit="salvarEmpresa(event)" class="space-y-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-xs">
+        <h4 class="font-bold text-[#ec7000] uppercase tracking-wider text-[11px]">Nova Empresa</h4>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Código</label>
+            <input type="text" id="campoEmpCodigo" readonly placeholder="Auto..."
+              class="w-full px-2.5 py-1.5 rounded-xl bg-slate-200/70 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-[#ec7000] font-mono outline-none">
+          </div>
+          <div class="col-span-2">
+            <label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Nome da Empresa*</label>
+            <input type="text" id="campoEmpNome" required placeholder="Ex: IAZ Transportes LTDA"
+              class="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-[#151f32] border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-[#ff6200] outline-none">
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block font-semibold text-slate-600 dark:text-slate-300">Logotipo</label>
+          <input type="file" id="campoEmpFile" accept="image/*" onchange="processarArquivoLogo(event)"
+            class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-700 dark:file:text-slate-300 file:font-semibold">
+          <input type="text" id="campoEmpLogo" oninput="aoDigitarLogoUrl(this.value)" placeholder="Ou cole a URL direta da imagem..."
+            class="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-[#151f32] border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-mono outline-none">
+          <div id="logoPreviewContainer" class="hidden flex items-center justify-between p-2 rounded-xl bg-white dark:bg-[#151f32] border border-slate-200 dark:border-slate-700">
+            <img id="logoPreviewImg" src="" class="h-8 max-w-[80px] object-contain rounded p-0.5 bg-slate-100 dark:bg-slate-900">
+            <button type="button" onclick="limparLogoForm()" class="text-xs text-rose-600 font-bold hover:underline">Remover</button>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-1">
+          <button type="submit" id="btnSalvarEmp" class="px-4 py-1.5 rounded-xl bg-[#ff6200] hover:bg-[#ec7000] text-white font-bold text-xs shadow-sm transition">
+            Adicionar Empresa
           </button>
         </div>
-      </div>
+      </form>
 
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">API de Sincronização / Modo Nuvem</label>
-        <input type="text" id="apiUrlInput" placeholder="http://localhost:8000/api ou deixe vazio para Nuvem"
-          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-xs font-mono text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
-        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-          ☁️ <span class="text-blue-500 font-semibold">100% Nuvem</span>: rotina automática a cada 2h via GitHub Actions.
-        </p>
-      </div>
-
-      <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-        <button onclick="closeConfigModal()" class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Fechar</button>
-        <button onclick="salvarConfiguracoes()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium">Salvar</button>
+        <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Empresas Cadastradas</h4>
+        <div id="empresasListaContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1 text-xs">
+          <p class="text-slate-400 text-center py-3">Carregando...</p>
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- MODAL: Usuários Liberados (Admin) -->
+  <div id="usuariosModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-[#293548]">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Usuários Liberados</h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">Controle de acesso por conta Google (Tabela ju_usuarios)</p>
+        </div>
+        <button onclick="closeUsuariosModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold">✕</button>
+      </div>
+
+      <form id="usuarioForm" onsubmit="salvarUsuarioLiberado(event)" class="space-y-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-xs">
+        <h4 id="usuarioFormTitulo" class="font-bold text-[#ec7000] uppercase tracking-wider text-[11px]">Liberar Novo Usuário</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">E-mail Google*</label>
+            <input type="email" id="campoUserEmail" required placeholder="exemplo@gmail.com"
+              class="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-[#151f32] border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-[#ff6200]">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Nome Completo</label>
+            <input type="text" id="campoUserNome" placeholder="Ex: Dr. Carlos Silva"
+              class="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-[#151f32] border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-[#ff6200]">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Permissão / Papel</label>
+            <select id="campoUserPapel" class="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-[#151f32] border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none">
+              <option value="solicitante">Operador (Acesso aos Processos)</option>
+              <option value="admin">Administrador (Total + Gestão de Usuários)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Status de Acesso</label>
+            <select id="campoUserAtivo" class="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-[#151f32] border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none">
+              <option value="true">Liberado (Ativo)</option>
+              <option value="false">Bloqueado (Inativo)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-1">
+          <button type="button" id="btnCancelarEditUser" onclick="limparFormUsuario()" class="hidden px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-200 dark:hover:bg-slate-800 transition">
+            Cancelar
+          </button>
+          <button type="submit" id="btnSalvarUser" class="px-4 py-1.5 rounded-xl bg-[#ff6200] hover:bg-[#ec7000] text-white font-bold text-xs shadow-sm transition">
+            Salvar Usuário
+          </button>
+        </div>
+      </form>
+
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Usuários Cadastrados</h4>
+          <span id="totalUsuariosBadge" class="text-[10px] text-slate-400 font-mono">0 usuários</span>
+        </div>
+        <div id="usuariosListaContainer" class="space-y-2 max-h-56 overflow-y-auto pr-1 text-xs">
+          <p class="text-slate-400 text-center py-3">Carregando usuários...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Configurações & API -->
+  <div id="configModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4 text-xs">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-[#293548]">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Configurações do Sistema</h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">Ajustes de tema e conexão de nuvem</p>
+        </div>
+        <button onclick="closeConfigModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-2">Aparência (Tema)</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="btnTemaDark" onclick="alterarTema('dark')" 
+              class="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#ff6200] bg-[#ff6200]/10 text-[#ec7000] font-bold">
+              <span>🌙</span> Modo Escuro
+            </button>
+            <button type="button" id="btnTemaLight" onclick="alterarTema('light')" 
+              class="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 dark:border-[#293548] text-slate-600 dark:text-slate-400 font-semibold">
+              <span>☀️</span> Modo Claro
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">API de Sincronização DataJud</label>
+          <input type="text" id="apiUrlInput" placeholder="https://monitorarprocessos.vercel.app/api ou http://localhost:8000/api"
+            class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-slate-800 dark:text-slate-100 font-mono text-xs outline-none">
+          <p class="text-[10px] text-slate-400 mt-1">
+            ☁️ No Vercel, a rota nativa é gerenciada automaticamente via Serverless Function.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200/80 dark:border-[#293548]">
+        <button type="button" onclick="closeConfigModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-[#293548] text-slate-600 dark:text-slate-300 font-semibold">
+          Cancelar
+        </button>
+        <button type="button" onclick="salvarConfiguracoes()" class="px-5 py-2 rounded-xl bg-[#ff6200] hover:bg-[#ec7000] text-white font-bold shadow-sm transition">
+          Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Sincronização DataJud em Lote -->
+  <div id="syncModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-[#293548]">
+        <div class="flex items-center gap-2">
+          <span class="text-lg text-[#ff6200]">⚡</span>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Checar DataJud (CNJ)</h3>
+            <p id="syncStatusSubtitle" class="text-[10px] text-slate-500 dark:text-slate-400">Consultando e atualizando no Supabase</p>
+          </div>
+        </div>
+        <button id="btnCloseSyncModal" onclick="fecharSyncModal()" class="hidden p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold">✕</button>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between text-xs font-semibold mb-1">
+          <span id="syncProgressText" class="text-slate-700 dark:text-slate-300">Iniciando...</span>
+          <span id="syncPercentText" class="text-[#ec7000] font-mono">0%</span>
+        </div>
+        <div class="w-full bg-slate-100 dark:bg-[#1e293b] rounded-full h-2.5 overflow-hidden">
+          <div id="syncProgressBar" class="bg-gradient-to-r from-[#ff6200] to-[#ffb800] h-2.5 rounded-full transition-all duration-200" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div id="syncLogBox" class="bg-slate-50 dark:bg-[#0b1120] border border-slate-200 dark:border-[#293548] rounded-xl p-3 h-44 overflow-y-auto font-mono text-[11px] space-y-1">
+      </div>
+
+      <div class="flex justify-end pt-1">
+        <button id="btnConcluirSync" onclick="fecharSyncModal()" disabled
+          class="px-4 py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold transition">
+          Concluir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTAINER DE TOASTS FLUTUANTES (Canto Superior Direito) -->
+  <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ========================================== -->
+  <!-- 4. SCRIPT PRINCIPAL                        -->
+  <!-- ========================================== -->
   <script>    
     // Configurações do Supabase (Apenas Chave Pública / Publishable)
     const SUPABASE_URL = "https://kslmyvlewsmjnrhwklfd.supabase.co";
@@ -535,15 +931,7 @@
     if (IS_VERCEL) API_URL = `${window.location.origin}/api`;
     let CONFIG_GLOBAL = { app_theme: "dark", api_url: API_URL };
 
-    // Só considera API própria se for um servidor local (localhost); Apps Script legado é ignorado
-    function usaApiLocal() {
-      return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(API_URL || "");
-    }
-    // Descarta valor legado do Apps Script salvo no navegador
-    if (/script\.google\.com/i.test(API_URL || "")) {
-      localStorage.removeItem("PROCESSOS_API_URL");
-      API_URL = DEFAULT_API_URL;
-    }
+    // Estado da Aplicação
     let processosData = [];
     let empresasData = [];
     let logoTempBase64 = "";
@@ -554,9 +942,38 @@
     let currentPapel = null;
     let usuariosLiberadosData = [];
 
+    // Estado do Padrão Visual IAZ
+    let modoPrivacidade = false;
+    let telaAtivaAtual = "processos";
+    let deferredPwaPrompt = null;
+    let dataInicioPeriodo = null;
+    let dataFimPeriodo = null;
+
+    // Componente Reutilizável: LogoBadge
+    function renderLogoBadge(size = "md") {
+      const sizes = {
+        sm: { box: "w-8 h-8 rounded-[9px]", text: "text-[11px]" },
+        md: { box: "w-10 h-10 rounded-[12px]", text: "text-sm" },
+        lg: { box: "w-14 h-14 rounded-[16px]", text: "text-xl" }
+      };
+      const conf = sizes[size] || sizes.md;
+      return `
+        <div class="${conf.box} bg-gradient-to-br from-[#001652] to-[#000d3c] border border-[#ff6200] flex items-center justify-center shadow-sm select-none">
+          <span class="${conf.text} font-black tracking-tight text-[#ffb800]">iaz</span>
+        </div>`;
+    }
+
     // Inicialização da Autenticação via Supabase
     window.addEventListener("DOMContentLoaded", async () => {
+      definirPeriodoMesAtual();
       await inicializarAutenticacao();
+    });
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPwaPrompt = e;
+      const btn = document.getElementById("btnInstalarApp");
+      if (btn) btn.classList.remove("hidden");
     });
 
     async function inicializarAutenticacao() {
@@ -633,21 +1050,17 @@
 
     async function obterPapelUsuario(email) {
       try {
-        // 1. Tenta RPC papel_atual (nativo do Supabase)
         const res = await supabaseRequest("rpc/papel_atual", "POST", {});
         if (res && typeof res === 'string') return res;
-      } catch (e) {
-        // Silencioso se RPC não estiver acessível
-      }
+      } catch (e) {}
 
-      // 2. Consulta direta na tabela usuarios
       try {
         const rows = await supabaseRequest(`ju_usuarios?email=eq.${encodeURIComponent(email)}&select=*`);
         if (rows && rows.length > 0 && rows[0].ativo) {
           return rows[0].papel || "solicitante";
         }
       } catch (err) {
-        console.warn("Erro ao verificar tabela usuarios:", err);
+        console.warn("Erro ao verificar tabela ju_usuarios:", err);
       }
       return null;
     }
@@ -673,23 +1086,26 @@
 
     function atualizarUiUsuarioLogado(user, papel) {
       const nome = user.user_metadata?.full_name || user.email?.split('@')[0] || "Usuário";
+      const primeiroNome = nome.split(' ')[0];
       const email = user.email || "";
-      const avatar = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=2563eb&color=fff`;
+      const avatar = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=ff6200&color=fff`;
 
       const elAvatar = document.getElementById("userAvatar");
+      const elPill = document.getElementById("userPillNome");
       const elNome = document.getElementById("userNome");
       const elEmail = document.getElementById("userEmail");
       const elBadge = document.getElementById("userBadgePapel");
       const btnMenuUser = document.getElementById("btnMenuUsuarios");
 
       if (elAvatar) elAvatar.src = avatar;
+      if (elPill) elPill.innerText = primeiroNome;
       if (elNome) elNome.innerText = nome;
       if (elEmail) elEmail.innerText = email;
       if (elBadge) {
         elBadge.innerText = papel === 'admin' ? '👑 Admin' : '👤 Operador';
         elBadge.className = papel === 'admin'
-          ? "text-[9px] px-1.5 py-0.5 rounded font-semibold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300"
-          : "text-[9px] px-1.5 py-0.5 rounded font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300";
+          ? "text-[9px] px-1.5 py-0.2 rounded font-bold bg-[#ff6200]/15 text-[#ec7000] border border-[#ff6200]/30"
+          : "text-[9px] px-1.5 py-0.2 rounded font-bold bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200";
       }
 
       // Mostra menu de Usuários Liberados apenas para Administradores
@@ -699,11 +1115,31 @@
       }
     }
 
+    // Controle do Dropdown do Usuário
+    function toggleUserDropdown(event) {
+      if (event) event.stopPropagation();
+      const menu = document.getElementById("userDropdownMenu");
+      if (menu) menu.classList.toggle("hidden");
+    }
+
+    function fecharUserDropdown() {
+      const menu = document.getElementById("userDropdownMenu");
+      if (menu) menu.classList.add("hidden");
+    }
+
+    document.addEventListener("click", (e) => {
+      const menu = document.getElementById("userDropdownMenu");
+      const btn = document.getElementById("btnUserAvatar");
+      if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) {
+        menu.classList.add("hidden");
+      }
+    });
+
     async function entrarComGoogle() {
       const btn = document.getElementById("btnLoginGoogle");
 
       if (window.location.protocol === 'file:') {
-        alert("O login com Google não funciona abrindo o arquivo localmente com 'file://'.\n\nPor favor, execute o servidor local (py server.py e acesse http://localhost:8000) ou acesse pelo GitHub Pages!");
+        alert("O login com Google não funciona abrindo o arquivo localmente com 'file://'.\n\nPor favor, execute o servidor local (py server.py e acesse http://localhost:8000) ou acesse pela Vercel / GitHub Pages!");
         return;
       }
 
@@ -742,8 +1178,173 @@
       exibirEstadoAuth('login');
     }
 
+    // Navegação Principal de Telas (Squircles)
+    function setTelaAtiva(tela) {
+      telaAtivaAtual = tela;
+      const abas = ['processos', 'novo', 'empresas', 'relatorios', 'admin'];
+      
+      abas.forEach(t => {
+        const sq = document.getElementById(`sq-${t}`);
+        const lbl = document.getElementById(`lbl-${t}`);
+        const ind = document.getElementById(`ind-${t}`);
+
+        if (sq && lbl && ind) {
+          if (t === tela) {
+            sq.className = "w-11 h-11 sm:w-13 sm:h-13 rounded-[16px] bg-[#ff6200] text-white scale-105 shadow-orange-sm ring-2 ring-[#ff6200]/25 ring-offset-2 dark:ring-offset-[#0b1120] flex items-center justify-center transition-all duration-200";
+            lbl.className = "text-[10px] sm:text-[11px] font-bold text-[#ec7000] mt-1 text-center truncate w-full";
+            ind.className = "h-1 w-5 rounded-full bg-[#ff6200] mt-0.5";
+          } else {
+            sq.className = "w-11 h-11 sm:w-13 sm:h-13 rounded-[16px] bg-white dark:bg-[#151f32] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-[#293548] group-hover:border-[#ff6200] group-hover:text-[#ff6200] flex items-center justify-center transition-all duration-200 shadow-2xs";
+            lbl.className = "text-[10px] sm:text-[11px] font-medium text-slate-600 dark:text-slate-400 group-hover:text-[#ec7000] mt-1 text-center truncate w-full";
+            ind.className = "h-1 w-5 rounded-full bg-transparent mt-0.5";
+          }
+        }
+      });
+
+      const titleEl = document.getElementById("screenTitle");
+      const subEl = document.getElementById("screenSubtitle");
+      if (titleEl && subEl) {
+        if (tela === 'processos') {
+          titleEl.innerText = "Processos Judiciais";
+          subEl.innerText = "Monitoramento integrado Supabase e DataJud (CNJ)";
+        }
+      }
+    }
+
+    // Modo Olho (Ocultar / Mostrar Valores com ••••)
+    function toggleModoPrivacidade() {
+      modoPrivacidade = !modoPrivacidade;
+      const eyeOpen = document.getElementById("eyeIconOpen");
+      const eyeClosed = document.getElementById("eyeIconClosed");
+      const eyeText = document.getElementById("eyeText");
+
+      if (eyeOpen && eyeClosed) {
+        if (modoPrivacidade) {
+          eyeOpen.classList.add("hidden");
+          eyeClosed.classList.remove("hidden");
+          if (eyeText) eyeText.innerText = "Oculto";
+          exibirToast("Valores e contadores ocultados", "info");
+        } else {
+          eyeOpen.classList.remove("hidden");
+          eyeClosed.classList.add("hidden");
+          if (eyeText) eyeText.innerText = "Valores";
+          exibirToast("Valores visíveis", "info");
+        }
+      }
+      renderProcessos();
+    }
+
+    // Barra de Busca
+    function alternarBarraBusca() {
+      const input = document.getElementById("searchInput");
+      if (input) {
+        input.focus();
+        input.select();
+        exibirToast("Campo de busca focado", "info");
+      }
+    }
+
+    // Guia de Ajuda (?)
+    function abrirGuiaAjuda() {
+      document.getElementById("ajudaModal").classList.remove("hidden");
+    }
+    function fecharGuiaAjuda() {
+      document.getElementById("ajudaModal").classList.add("hidden");
+    }
+
+    // Modal de Relatórios
+    function openRelatoriosModal() {
+      setTelaAtiva('relatorios');
+      document.getElementById("relatoriosModal").classList.remove("hidden");
+    }
+    function fecharRelatoriosModal() {
+      document.getElementById("relatoriosModal").classList.add("hidden");
+      setTelaAtiva('processos');
+    }
+
+    // Alternar Tema Rápido no Topo
+    function alternarTemaRapido() {
+      const atual = document.documentElement.classList.contains("dark") ? "dark" : "light";
+      const novo = atual === "dark" ? "light" : "dark";
+      alterarTema(novo);
+      exibirToast(novo === "dark" ? "Modo Escuro ativado" : "Modo Claro ativado", "info");
+    }
+
+    // Seletor de Período
+    function definirPeriodoMesAtual() {
+      const now = new Date();
+      dataInicioPeriodo = new Date(now.getFullYear(), now.getMonth(), 1);
+      dataFimPeriodo = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      atualizarLabelPeriodo();
+      renderProcessos();
+    }
+
+    function ajustarPeriodo(deltaMeses) {
+      if (!dataInicioPeriodo) dataInicioPeriodo = new Date();
+      const ano = dataInicioPeriodo.getFullYear();
+      const mes = dataInicioPeriodo.getMonth() + deltaMeses;
+      dataInicioPeriodo = new Date(ano, mes, 1);
+      dataFimPeriodo = new Date(ano, mes + 1, 0, 23, 59, 59);
+      atualizarLabelPeriodo();
+      renderProcessos();
+    }
+
+    function limparFiltroPeriodo() {
+      dataInicioPeriodo = null;
+      dataFimPeriodo = null;
+      const lbl = document.getElementById("labelPeriodo");
+      if (lbl) lbl.innerText = "Todos os Períodos";
+      renderProcessos();
+      exibirToast("Mostrando todos os períodos", "info");
+    }
+
+    function atualizarLabelPeriodo() {
+      const lbl = document.getElementById("labelPeriodo");
+      if (!lbl || !dataInicioPeriodo) return;
+      const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+      lbl.innerText = `${meses[dataInicioPeriodo.getMonth()]}/${dataInicioPeriodo.getFullYear()}`;
+    }
+
+    // Toasts no Canto Superior Direito (Azul-marinho com borda laranja ou rose)
+    function exibirToast(mensagem, tipo = "sucesso") {
+      const container = document.getElementById("toastContainer");
+      if (!container) return;
+
+      const toast = document.createElement("div");
+      const isErro = tipo === "erro";
+      const bordaCor = isErro ? "border-rose-500 text-rose-300" : "border-[#ff6200] text-slate-100";
+
+      toast.className = `flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-[#001652] ${bordaCor} border shadow-xl text-xs font-semibold backdrop-blur-md transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+      toast.innerHTML = `
+        <span>${isErro ? '⚠️' : '⚡'}</span>
+        <span class="truncate max-w-[240px]">${mensagem}</span>`;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove("translate-y-2", "opacity-0");
+      }, 20);
+
+      setTimeout(() => {
+        toast.classList.add("opacity-0", "-translate-y-2");
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function instalarPwaApp() {
+      if (deferredPwaPrompt) {
+        deferredPwaPrompt.prompt();
+        deferredPwaPrompt.userChoice.then(() => {
+          deferredPwaPrompt = null;
+        });
+      } else {
+        alert("Para instalar o JUD IAZ:\n- No Chrome/Edge: clique nos 3 pontos e 'Instalar JUD IAZ'\n- No Safari (iOS): clique em Compartilhar e 'Adicionar à Tela de Início'");
+      }
+    }
+
     // --- Gestão de Usuários Liberados (Whitelist) ---
     function openUsuariosModal() {
+      setTelaAtiva('admin');
       limparFormUsuario();
       document.getElementById("usuariosModal").classList.remove("hidden");
       carregarListaUsuarios();
@@ -751,6 +1352,7 @@
 
     function closeUsuariosModal() {
       document.getElementById("usuariosModal").classList.add("hidden");
+      setTelaAtiva('processos');
     }
 
     function limparFormUsuario() {
@@ -764,7 +1366,7 @@
     async function carregarListaUsuarios() {
       const container = document.getElementById("usuariosListaContainer");
       const badge = document.getElementById("totalUsuariosBadge");
-      container.innerHTML = `<p class="text-xs text-slate-500 py-3 text-center">Carregando usuários...</p>`;
+      container.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center">Carregando usuários...</p>`;
 
       try {
         const rows = await supabaseRequest("ju_usuarios?select=*&order=nome.asc");
@@ -772,7 +1374,7 @@
         if (badge) badge.innerText = `${usuariosLiberadosData.length} usuário(s)`;
 
         if (usuariosLiberadosData.length === 0) {
-          container.innerHTML = `<p class="text-xs text-slate-500 py-3 text-center">Nenhum usuário liberado cadastrado.</p>`;
+          container.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center">Nenhum usuário liberado cadastrado.</p>`;
           return;
         }
 
@@ -786,37 +1388,44 @@
           const isMe = email === logadoEmail;
 
           return `
-          <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+          <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-xs">
             <div class="flex items-center gap-2.5 min-w-0">
-              <div class="h-7 w-7 rounded-full bg-blue-600/10 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center border border-blue-500/20 text-xs uppercase flex-shrink-0">
+              <div class="h-7 w-7 rounded-full bg-[#001652] text-[#ffb800] font-bold flex items-center justify-center border border-[#ff6200]/30 text-xs uppercase flex-shrink-0">
                 ${nome.charAt(0)}
               </div>
               <div class="min-w-0">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                  <p class="font-bold text-slate-800 dark:text-slate-200 truncate">${nome}</p>
+                  <p class="font-bold text-slate-900 dark:text-white truncate">${nome}</p>
                   ${isMe ? `<span class="text-[9px] px-1 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">Você</span>` : ''}
                 </div>
-                <p class="text-[11px] text-slate-500 font-mono truncate">${email}</p>
+                <p class="text-[11px] text-slate-400 font-mono truncate">${email}</p>
               </div>
             </div>
 
             <div class="flex items-center gap-1.5 flex-shrink-0">
-              <span class="text-[10px] px-2 py-0.5 rounded font-semibold ${isAdmin ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}">
+              <span class="text-[9px] px-2 py-0.5 rounded font-bold ${isAdmin ? 'bg-[#ff6200]/15 text-[#ec7000]' : 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'}">
                 ${isAdmin ? '👑 Admin' : '👤 Operador'}
               </span>
 
-              <button onclick="alternarStatusUsuario('${email}', ${isAtivo})" title="${isAtivo ? 'Clique para Bloquear' : 'Clique para Liberar'}" 
-                class="text-[10px] px-2 py-0.5 rounded font-semibold transition ${isAtivo ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 hover:opacity-80' : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 hover:opacity-80'}">
-                ${isAtivo ? '🟢 Ativo' : '🔴 Bloqueado'}
+              <button onclick="alternarStatusUsuario('${email}', ${isAtivo})" 
+                title="${isAtivo ? 'Clique para bloquear' : 'Clique para liberar'}"
+                class="px-2 py-0.5 text-[10px] font-bold rounded ${isAtivo ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400'}">
+                ${isAtivo ? 'Liberado' : 'Bloqueado'}
               </button>
 
-              <button onclick='editarUsuarioLiberado(${JSON.stringify(u)})' title="Editar" class="p-1 text-slate-400 hover:text-blue-500 text-xs">✏️</button>
-              ${!isMe ? `<button onclick="excluirUsuarioLiberado('${email}')" title="Excluir" class="p-1 text-slate-400 hover:text-rose-500 text-xs">🗑️</button>` : ''}
+              <button onclick='editarUsuarioLiberado(${JSON.stringify(u)})' class="p-1 rounded text-slate-500 hover:text-[#ff6200] transition" title="Editar">
+                ✏️
+              </button>
+
+              ${!isMe ? `
+              <button onclick="excluirUsuarioLiberado('${email}')" class="p-1 rounded text-slate-500 hover:text-rose-500 transition" title="Excluir">
+                🗑️
+              </button>` : ''}
             </div>
           </div>`;
         }).join('');
       } catch (err) {
-        container.innerHTML = `<p class="text-xs text-rose-500 py-3 text-center">Erro ao carregar usuários: ${err.message}</p>`;
+        container.innerHTML = `<p class="text-xs text-rose-500 py-3 text-center">Erro: ${err.message}</p>`;
       }
     }
 
@@ -825,9 +1434,9 @@
       document.getElementById("campoUserEmail").readOnly = true;
       document.getElementById("campoUserNome").value = u.nome || "";
       document.getElementById("campoUserPapel").value = u.papel || "solicitante";
-      document.getElementById("campoUserAtivo").value = String(Boolean(u.ativo));
+      document.getElementById("campoUserAtivo").value = String(u.ativo);
 
-      document.getElementById("usuarioFormTitulo").innerText = "Editar Usuário";
+      document.getElementById("usuarioFormTitulo").innerText = "Editar Usuário: " + u.email;
       document.getElementById("btnSalvarUser").innerText = "Atualizar Usuário";
       document.getElementById("btnCancelarEditUser").classList.remove("hidden");
     }
@@ -853,9 +1462,9 @@
 
         limparFormUsuario();
         await carregarListaUsuarios();
-        alert(`Usuário ${email} salvo com sucesso!`);
+        exibirToast(`Usuário ${email} salvo com sucesso!`);
       } catch (err) {
-        alert("Erro ao salvar usuário liberado: " + err.message);
+        alert("Erro ao salvar usuário: " + err.message);
       } finally {
         btn.disabled = false;
         btn.innerText = "Salvar Usuário";
@@ -872,8 +1481,9 @@
           ativo: !statusAtual
         });
         await carregarListaUsuarios();
+        exibirToast("Status do usuário atualizado!");
       } catch (err) {
-        alert("Erro ao alterar status do usuário: " + err.message);
+        alert("Erro ao alterar status: " + err.message);
       }
     }
 
@@ -887,15 +1497,14 @@
       try {
         await supabaseRequest(`ju_usuarios?email=eq.${encodeURIComponent(email)}`, "DELETE");
         await carregarListaUsuarios();
+        exibirToast("Usuário removido!");
       } catch (err) {
         alert("Erro ao remover usuário: " + err.message);
       }
     }
 
-
     async function supabaseRequest(endpoint, method = "GET", data = null, customHeaders = {}) {
       const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
-      // Injeta o token de autenticação do usuário logado no Supabase
       const authToken = currentSession?.access_token || SUPABASE_PUBLISHABLE_KEY;
       const options = {
         method: method,
@@ -940,8 +1549,7 @@
         rows.forEach(r => {
           if (r.chave) CONFIG_GLOBAL[r.chave] = r.valor;
         });
-        // Ignora URLs legadas do Apps Script gravadas no Supabase
-        if (CONFIG_GLOBAL.api_url && !/script\.google\.com/i.test(CONFIG_GLOBAL.api_url) && !IS_GITHUB_PAGES) API_URL = CONFIG_GLOBAL.api_url;
+        if (CONFIG_GLOBAL.api_url && !/script\.google\.com/i.test(CONFIG_GLOBAL.api_url) && !IS_GITHUB_PAGES && !IS_VERCEL) API_URL = CONFIG_GLOBAL.api_url;
         aplicarTema(CONFIG_GLOBAL.app_theme || "dark");
       } catch (e) {
         console.error("Erro ao carregar do Supabase", e);
@@ -951,12 +1559,21 @@
 
     function aplicarTema(tema) {
       const meta = document.getElementById("metaThemeColor");
+      const iconLua = document.getElementById("iconTemaLua");
+      const iconSol = document.getElementById("iconTemaSol");
+
       if (tema === "dark") {
         document.documentElement.classList.add("dark");
-        if (meta) meta.setAttribute("content", "#090d16");
+        document.body.classList.add("dark");
+        if (meta) meta.setAttribute("content", "#000d3c");
+        if (iconLua) iconLua.classList.add("hidden");
+        if (iconSol) iconSol.classList.remove("hidden");
       } else {
         document.documentElement.classList.remove("dark");
-        if (meta) meta.setAttribute("content", "#f8fafc");
+        document.body.classList.remove("dark");
+        if (meta) meta.setAttribute("content", "#000d3c");
+        if (iconSol) iconSol.classList.add("hidden");
+        if (iconLua) iconLua.classList.remove("hidden");
       }
       atualizarBotoesTema(tema);
     }
@@ -967,11 +1584,11 @@
       if (!btnDark || !btnLight) return;
 
       if (temaAtual === "dark") {
-        btnDark.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-blue-500 bg-blue-500/10 text-blue-400 text-xs font-semibold";
-        btnLight.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800";
+        btnDark.className = "flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#ff6200] bg-[#ff6200]/15 text-[#ec7000] font-bold";
+        btnLight.className = "flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 dark:border-[#293548] text-slate-600 dark:text-slate-400 font-semibold";
       } else {
-        btnLight.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-blue-600 bg-blue-50 text-blue-600 text-xs font-semibold";
-        btnDark.className = "flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800";
+        btnLight.className = "flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#ff6200] bg-[#ff6200]/10 text-[#ec7000] font-bold";
+        btnDark.className = "flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-semibold";
       }
     }
 
@@ -990,59 +1607,32 @@
         await supabaseRequest("ju_configuracoes", "POST", { chave: "api_url", valor: apiUrlVal }, { "Prefer": "resolution=merge-duplicates" });
       }
       closeConfigModal();
-    }
-
-    function toggleSidebar() {
-      document.getElementById("sidebar").classList.toggle("-translate-x-full");
-      document.getElementById("sidebarOverlay").classList.toggle("hidden");
-    }
-
-    function fecharSidebar() {
-      document.getElementById("sidebar").classList.add("-translate-x-full");
-      document.getElementById("sidebarOverlay").classList.add("hidden");
+      exibirToast("Configurações salvas!");
     }
 
     function tratarUrlImagem(url) {
       if (!url) return "";
-      const trimmed = url.trim();
-      if (trimmed.startsWith("data:image")) return trimmed;
-      const driveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/id=([a-zA-Z0-9_-]+)/);
-      if (driveMatch && driveMatch[1]) {
-        return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
-      }
-      return trimmed;
+      let u = url.trim();
+      const m = u.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (m && m[1]) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
+      return u;
     }
 
     function processarArquivoLogo(event) {
-      const file = event.target.files[0];
+      const file = event.target.files && event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement("canvas");
-          let width = img.width, height = img.height;
-          const maxDim = 120;
-          if (width > height && width > maxDim) { height = Math.round((height * maxDim) / width); width = maxDim; }
-          else if (height > maxDim) { width = Math.round((width * maxDim) / height); height = maxDim; }
-          canvas.width = width; canvas.height = height;
-          canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-          logoTempBase64 = canvas.toDataURL("image/png");
-          exibirPreviewLogo(logoTempBase64);
-        };
-        img.src = e.target.result;
+        logoTempBase64 = e.target.result;
+        exibirPreviewLogo(logoTempBase64);
       };
       reader.readAsDataURL(file);
     }
 
     function aoDigitarLogoUrl(val) {
-      if (val.trim()) {
-        logoTempBase64 = "";
-        document.getElementById("campoEmpFile").value = "";
-        exibirPreviewLogo(tratarUrlImagem(val));
-      } else {
-        document.getElementById("logoPreviewContainer").classList.add("hidden");
-      }
+      logoTempBase64 = "";
+      if (val) exibirPreviewLogo(tratarUrlImagem(val));
+      else limparLogoForm();
     }
 
     function exibirPreviewLogo(src) {
@@ -1052,20 +1642,23 @@
 
     function limparLogoForm() {
       logoTempBase64 = "";
-      document.getElementById("campoEmpFile").value = "";
       document.getElementById("campoEmpLogo").value = "";
+      document.getElementById("campoEmpFile").value = "";
       document.getElementById("logoPreviewContainer").classList.add("hidden");
     }
 
     function gerarProximoCodigoEmpresa() {
-      if (!empresasData || empresasData.length === 0) return "EMP-01";
-      const numeros = empresasData.map(e => parseInt(String(e.codigo).replace(/\D/g, ""), 10) || 0);
+      const codigos = empresasData.map(e => e.codigo).filter(Boolean);
+      const numeros = codigos.map(c => {
+        const m = c.match(/EMP-(\d+)/);
+        return m ? parseInt(m[1], 10) : 0;
+      });
       return `EMP-${String(Math.max(0, ...numeros) + 1).padStart(2, "0")}`;
     }
 
     async function carregarProcessos() {
       const container = document.getElementById("processosContainer");
-      container.innerHTML = `<div class="text-center py-12 text-slate-500 text-sm">Carregando dados do Supabase...</div>`;
+      container.innerHTML = `<div class="text-center py-12 text-slate-500 dark:text-slate-400 text-xs">Carregando dados do Supabase...</div>`;
       try {
         const [empresasRes, processosRes] = await Promise.all([
           supabaseRequest("ju_empresas?select=*"),
@@ -1079,7 +1672,7 @@
           email: r.email,
           tribunal: r.tribunal,
           ultimaData: r.ultima_data,
-          ultima_verificacao: r.ultima_verificacao, // <-- ADICIONADO AQUI
+          ultima_verificacao: r.ultima_verificacao,
           status: r.status || "Ativo",
           apelido: r.apelido,
           reclamante: r.reclamante || "",
@@ -1091,75 +1684,66 @@
 
         atualizarSeletoresEmpresa();
         renderizarListaEmpresasModal();
-        atualizarIdentidadeVisual();
         renderProcessos();
       } catch (err) {
-        container.innerHTML = `<div class="text-center text-red-500 text-sm py-4">Erro ao carregar do Supabase: ${err.message}</div>`;
+        container.innerHTML = `<div class="text-center text-rose-500 text-xs py-4">Erro ao carregar do Supabase: ${err.message}</div>`;
       }
     }
 
     function atualizarSeletoresEmpresa() {
-      const filtro = document.getElementById("empresaFilter");
-      const campo = document.getElementById("campoEmpresa");
-      const valorAtual = filtro.value;
+      const selFiltro = document.getElementById("empresaFilter");
+      const selForm = document.getElementById("campoEmpresa");
+      const selAtualFiltro = selFiltro.value;
+      const selAtualForm = selForm.value;
 
-      filtro.innerHTML = `<option value="">Todas as Empresas</option>` + empresasData.map(e => `
-        <option value="${e.codigo}">${e.nome || e.codigo}</option>
-      `).join('');
-      filtro.value = valorAtual;
+      selFiltro.innerHTML = `<option value="">🏢 Todas as Empresas</option>`;
+      selForm.innerHTML = `<option value="">Selecione uma empresa...</option>`;
 
-      campo.innerHTML = `<option value="">Selecione uma empresa...</option>` + empresasData.map(e => `
-        <option value="${e.codigo}">${e.codigo} - ${e.nome}</option>
-      `).join('');
+      empresasData.forEach(e => {
+        const opt1 = document.createElement("option");
+        opt1.value = e.codigo;
+        opt1.innerText = `${e.nome || e.codigo}`;
+        selFiltro.appendChild(opt1);
+
+        const opt2 = document.createElement("option");
+        opt2.value = e.codigo;
+        opt2.innerText = `${e.nome || e.codigo}`;
+        selForm.appendChild(opt2);
+      });
+
+      selFiltro.value = selAtualFiltro;
+      selForm.value = selAtualForm;
     }
 
     function renderizarListaEmpresasModal() {
       const container = document.getElementById("empresasListaContainer");
-      if (empresasData.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 py-3 text-center">Nenhuma empresa cadastrada.</p>`;
+      if (!container) return;
+      if (!empresasData.length) {
+        container.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center">Nenhuma empresa cadastrada.</p>`;
         return;
       }
-      container.innerHTML = empresasData.map(e => {
-        const logoUrl = tratarUrlImagem(e.logotipo);
-        return `
-        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
-          <div class="flex items-center gap-2 min-w-0">
-            ${logoUrl ? `<img src="${logoUrl}" onerror="this.src=''; this.style.display='none'" class="h-6 w-6 object-contain rounded bg-white dark:bg-slate-950 p-0.5 border border-slate-200 dark:border-slate-800">` : `<span class="text-base">🏢</span>`}
+      container.innerHTML = empresasData.map(e => `
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548]">
+          <div class="flex items-center gap-2.5 min-w-0">
+            ${e.logotipo ? `<img src="${e.logotipo}" class="h-7 w-7 rounded-lg object-contain bg-white p-0.5 border border-slate-200 flex-shrink-0">` : `<div class="h-7 w-7 rounded-lg bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs flex-shrink-0">🏢</div>`}
             <div class="min-w-0">
-              <p class="font-bold text-slate-800 dark:text-slate-200 truncate">${e.nome}</p>
-              <p class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">Código: ${e.codigo}</p>
+              <p class="font-bold text-slate-900 dark:text-white truncate">${e.nome || e.codigo}</p>
+              <p class="text-[10px] text-slate-400 font-mono">${e.codigo}</p>
             </div>
           </div>
-          <button onclick="excluirEmpresa('${e.codigo}')" class="text-red-500 hover:text-red-400 p-1 text-xs">🗑️</button>
-        </div>`;
-      }).join('');
+          <button onclick="excluirEmpresa('${e.codigo}')" class="p-1 rounded text-slate-400 hover:text-rose-500 transition" title="Excluir">
+            🗑️
+          </button>
+        </div>`).join('');
     }
 
     function aoFiltrarEmpresa() {
-      atualizarIdentidadeVisual();
       renderProcessos();
-    }
-
-    function atualizarIdentidadeVisual() {
-      const codSel = document.getElementById("empresaFilter").value;
-      const emp = codSel ? empresasData.find(e => String(e.codigo).trim() === String(codSel).trim()) : empresasData[0];
-      const logoUrl = emp ? tratarUrlImagem(emp.logotipo) : "";
-
-      const sideLogo = document.getElementById("sideHeaderLogo");
-      const sideNome = document.getElementById("sideHeaderEmpresa");
-      const topLogo = document.getElementById("topHeaderLogo");
-      const topSub = document.getElementById("topHeaderSubtitulo");
-
-      if (logoUrl) { sideLogo.src = logoUrl; sideLogo.classList.remove("hidden"); topLogo.src = logoUrl; topLogo.classList.remove("hidden"); }
-      else { sideLogo.classList.add("hidden"); topLogo.classList.add("hidden"); }
-
-      if (emp && emp.nome) { sideNome.innerText = emp.nome; topSub.innerText = emp.nome; }
-      else { sideNome.innerText = "Monitoramento Supabase"; topSub.innerText = "Visão Geral dos Autos"; }
     }
 
     function obterNomeEmpresa(cod) {
       if (!cod) return "";
-      const emp = empresasData.find(e => String(e.codigo).trim() === String(cod).trim());
+      const emp = empresasData.find(e => e.codigo === cod);
       return emp ? (emp.nome || emp.codigo) : cod;
     }
 
@@ -1174,6 +1758,7 @@
       document.getElementById("empresaForm").reset();
       await carregarProcessos();
       document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
+      exibirToast(`Empresa ${nome} salva com sucesso!`);
     }
 
     async function excluirEmpresa(cod) {
@@ -1181,11 +1766,11 @@
       await supabaseRequest(`ju_empresas?codigo=eq.${encodeURIComponent(cod)}`, "DELETE");
       await carregarProcessos();
       document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
+      exibirToast("Empresa removida com sucesso!");
     }
 
     const TZ_FORTALEZA = "America/Fortaleza";
 
-    // Datas sem fuso (ex: "2026-10-21T13:29:06") são gravadas em UTC pelo Supabase
     function parseData(dataStr) {
       if (!dataStr) return null;
       let s = String(dataStr).trim();
@@ -1195,195 +1780,199 @@
     }
 
     function partesFortaleza(d) {
-      const p = {};
-      new Intl.DateTimeFormat("pt-BR", {
-        timeZone: TZ_FORTALEZA, year: "numeric", month: "2-digit", day: "2-digit",
-        hour: "2-digit", minute: "2-digit", hour12: false
-      }).formatToParts(d).forEach(x => p[x.type] = x.value);
-      if (p.hour === "24") p.hour = "00";
-      return p;
+      if (!d) return null;
+      const partes = new Intl.DateTimeFormat("en-US", {
+        timeZone: TZ_FORTALEZA,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      }).formatToParts(d);
+      const m = {};
+      partes.forEach(p => { m[p.type] = p.value; });
+      return {
+        dia: m.day,
+        mes: m.month,
+        ano: m.year,
+        hora: m.hour,
+        minuto: m.minute
+      };
     }
 
     function formatarDataHora(dataStr) {
-      if (!dataStr) return 'Sem registro';
       const d = parseData(dataStr);
-      if (!d) return String(dataStr);
+      if (!d) return "--/--/----";
       const p = partesFortaleza(d);
-      return `${p.day}/${p.month}/${p.year} às ${p.hour}:${p.minute}`;
+      return `${p.dia}/${p.mes}/${p.ano} ${p.hora}:${p.minuto}`;
     }
 
     function formatarDataVerificacao(dataStr) {
-      if (!dataStr) return 'Não verificado';
+      if (!dataStr) return "Pendente";
       const d = parseData(dataStr);
-      if (!d) return String(dataStr);
+      if (!d) return "Pendente";
       const p = partesFortaleza(d);
-      return `${p.day}/${p.month}/${p.year} às ${p.hour}:${p.minute}`;
+      return `${p.dia}/${p.mes}/${p.ano} às ${p.hora}:${p.minuto}`;
     }
 
     function calcularDiasDesde(dataStr) {
-      const dataMov = parseData(dataStr);
-      if (!dataMov) return "Sem data";
-      const a = partesFortaleza(dataMov), b = partesFortaleza(new Date());
-      const diaA = Date.UTC(+a.year, +a.month - 1, +a.day);
-      const diaB = Date.UTC(+b.year, +b.month - 1, +b.day);
-      const diffDias = Math.round((diaB - diaA) / 86400000);
-      if (diffDias <= 0) return "Hoje";
+      const d = parseData(dataStr);
+      if (!d) return "Sem data";
+      const agora = new Date();
+      const diffMs = agora.getTime() - d.getTime();
+      const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDias < 0) return "Hoje";
+      if (diffDias === 0) return "Hoje";
       if (diffDias === 1) return "Há 1 dia";
       return `Há ${diffDias} dias`;
     }
 
     function obterLinksTribunal(numProcesso, tribunal) {
-      const d = String(numProcesso).replace(/\D/g, "");
+      const digitos = String(numProcesso).replace(/\D/g, "");
       const links = [];
+      const cnjUrl = `https://comunica.pje.jus.br/consulta?numeroProcesso=${digitos}`;
+      links.push({ nome: "CNJ Comunica PJe", url: cnjUrl });
 
-      // Identifica sigla do tribunal se não estiver explícita
-      let sigla = String(tribunal || "").toUpperCase().trim();
-
-      if (d.length !== 20) {
-        const cnjFallback = sigla 
-          ? `https://comunica.pje.jus.br/consulta?siglaTribunal=${sigla}&numeroProcesso=${d}` 
-          : `https://comunica.pje.jus.br/consulta?numeroProcesso=${d}`;
-        links.push({ nome: "Portal CNJ (Comunicações)", url: cnjFallback });
-        return links;
+      const trib = (tribunal || "").toUpperCase().trim();
+      if (trib.includes("TJCE")) {
+        links.push({ nome: "TJCE 1º Grau", url: `https://esaj.tjce.jus.br/cpopg/search.do?conversationId=&cbPesquisa=NUMPROC&numeroDigitoAnoUnificado=&foroNumeroUnificado=&dadosConsulta.valorConsulta=${digitos}` });
+      } else if (trib.includes("TJSP")) {
+        links.push({ nome: "TJSP e-SAJ", url: `https://esaj.tjsp.jus.br/cpopg/search.do?conversationId=&cbPesquisa=NUMPROC&dadosConsulta.valorConsulta=${digitos}` });
+      } else if (trib.includes("TRT7") || trib.includes("TRT-7")) {
+        links.push({ nome: "TRT7 PJe", url: `https://pje.trt7.jus.br/consultaprocessual/detalhe-processo/${digitos}` });
+      } else if (trib.includes("TRF5") || trib.includes("TRF-5")) {
+        links.push({ nome: "TRF5 PJe", url: `https://pje.trf5.jus.br/pje/ConsultaPublica/listView.seam` });
       }
-
-      // Estrutura CNJ: NNNNNNN-DD.AAAA.J.TR.OOOO
-      const seq = d.substring(0, 7), dv = d.substring(7, 9), ano = d.substring(9, 13);
-      const j = d.substring(13, 14), tr = d.substring(14, 16), orig = d.substring(16, 20);
-      const formatado = `${seq}-${dv}.${ano}.${j}.${tr}.${orig}`;
-      const parteUnif = `${seq}-${dv}.${ano}`;
-
-      if (!sigla) {
-        if (j === "8") {
-          const tjs = { "06": "TJCE", "26": "TJSP", "13": "TJMG", "19": "TJRJ", "21": "TJRS", "16": "TJPR", "17": "TJPE", "05": "TJBA" };
-          sigla = tjs[tr] || `TJ${tr}`;
-        } else if (j === "5") {
-          sigla = `TRT${parseInt(tr, 10)}`;
-        } else if (j === "4") {
-          sigla = `TRF${parseInt(tr, 10)}`;
-        }
-      }
-
-      const esaj = (host, pasta, nome) => ({
-        nome,
-        url: `https://${host}/${pasta}/search.do?conversationId=&paginaConsulta=1&cbPesquisa=NUMPROC` +
-             `&numeroDigitoAnoUnificado=${encodeURIComponent(parteUnif)}&foroNumeroUnificado=${orig}` +
-             `&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(formatado)}` +
-             `&dadosConsulta.valorConsulta=&dadosConsulta.tipoNuProcesso=UNIFICADO`
-      });
-
-      if (j === "8" && tr === "06") {            // TJCE
-        links.push(esaj("esaj.tjce.jus.br", "cpopg", "e-SAJ TJCE (1º grau)"));
-        links.push(esaj("esaj.tjce.jus.br", "cposg5", "e-SAJ TJCE (2º grau)"));
-      } else if (j === "8" && tr === "26") {     // TJSP
-        links.push(esaj("esaj.tjsp.jus.br", "cpopg", "e-SAJ TJSP (1º grau)"));
-        links.push(esaj("esaj.tjsp.jus.br", "cposg", "e-SAJ TJSP (2º grau)"));
-      } else if (j === "5") {                    // Justiça do Trabalho (PJe)
-        const regiao = String(parseInt(tr, 10));
-        links.push({
-          nome: `PJe TRT${regiao} (1º grau)`,
-          url: `https://pje.trt${regiao}.jus.br/consultaprocessual/detalhe-processo/${formatado}/1`
-        });
-        links.push({
-          nome: `PJe TRT${regiao} (2º grau)`,
-          url: `https://pje.trt${regiao}.jus.br/consultaprocessual/detalhe-processo/${formatado}/2`
-        });
-      } else if (j === "4" && tr === "05") {     // TRF5
-        links.push({ nome: "PJe TRF5 (consulta pública)", url: "https://pje1g.trf5.jus.br/pjeconsulta/ConsultaPublica/listView.seam" });
-      }
-
-      // Parâmetros oficiais do Comunica PJe (CNJ): siglaTribunal e numeroProcesso
-      const cnjUrl = sigla
-        ? `https://comunica.pje.jus.br/consulta?siglaTribunal=${sigla}&numeroProcesso=${d}`
-        : `https://comunica.pje.jus.br/consulta?numeroProcesso=${d}`;
-      links.push({ nome: `Portal CNJ (${sigla || 'Comunicações'})`, url: cnjUrl });
-
       return links;
     }
 
     function obterProcessosFiltrados() {
-      const query = (document.getElementById("searchInput").value || "").toLowerCase().trim();
-      const queryLimpa = query.replace(/\D/g, "");
-      const empresaFiltro = document.getElementById("empresaFilter").value;
+      const empFiltro = document.getElementById("empresaFilter").value;
+      const busca = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
 
       return processosData.filter(p => {
-        const matchesEmpresa = !empresaFiltro || String(p.empresa || '').trim() === String(empresaFiltro).trim();
-        const nomeEmp = obterNomeEmpresa(p.empresa).toLowerCase();
+        if (empFiltro && p.empresa !== empFiltro) return false;
 
-        const numOriginal = (p.processo || "").toLowerCase();
-        const numLimpo = (p.processo || "").replace(/\D/g, "");
+        // Filtro por período de última movimentação
+        if (dataInicioPeriodo && dataFimPeriodo && p.ultimaData) {
+          const dMov = parseData(p.ultimaData);
+          if (dMov && (dMov < dataInicioPeriodo || dMov > dataFimPeriodo)) {
+            return false;
+          }
+        }
 
-        const matchNumero = numOriginal.includes(query) || (queryLimpa.length > 0 && numLimpo.includes(queryLimpa));
-        const matchTexto = (p.apelido || "").toLowerCase().includes(query) || 
-                           (p.tribunal || "").toLowerCase().includes(query) || 
-                           (p.reclamante || "").toLowerCase().includes(query) || 
-                           (p.reclamado || "").toLowerCase().includes(query) || 
-                           (p.vara || "").toLowerCase().includes(query) || 
-                           nomeEmp.includes(query);
-
-        return matchesEmpresa && (matchNumero || matchTexto);
+        if (busca) {
+          const apelido = (p.apelido || "").toLowerCase();
+          const proc = String(p.processo || "").toLowerCase();
+          const rec = (p.reclamante || "").toLowerCase();
+          const reu = (p.reclamado || "").toLowerCase();
+          const vara = (p.vara || "").toLowerCase();
+          const mail = (p.email || "").toLowerCase();
+          const trib = (p.tribunal || "").toLowerCase();
+          if (!apelido.includes(busca) && !proc.includes(busca) && !rec.includes(busca) && 
+              !reu.includes(busca) && !vara.includes(busca) && !mail.includes(busca) && !trib.includes(busca)) {
+            return false;
+          }
+        }
+        return true;
       });
     }
 
     function exportarExcel() {
       const filtrados = obterProcessosFiltrados();
       if (!filtrados.length) return alert("Nenhum processo para exportar.");
-      const worksheet = XLSX.utils.json_to_sheet(filtrados.map(p => ({
+
+      const dadosPlanilha = filtrados.map(p => ({
         "Empresa": obterNomeEmpresa(p.empresa),
-        "Processo": p.processo,
         "Apelido": p.apelido || "",
+        "Processo (CNJ)": p.processo,
         "Tribunal": p.tribunal || "",
-        "Última Verificação": formatarDataVerificacao(p.ultima_verificacao),
+        "Tipo": p.tipo || "",
         "Status": p.status || "Ativo",
-        "Vara": p.vara || "",
         "Reclamante": p.reclamante || "",
         "Reclamado": p.reclamado || "",
-        "Última Movimentação": formatarDataHora(p.ultimaData)
-      })));
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Processos");
-      XLSX.writeFile(workbook, `IAZ_Jud_Processos_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        "Vara": p.vara || "",
+        "Última Movimentação": formatarDataHora(p.ultimaData),
+        "Dias Sem Movimentação": calcularDiasDesde(p.ultimaData),
+        "Última Verificação": formatarDataVerificacao(p.ultima_verificacao),
+        "E-mail Notificação": p.email || ""
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(dadosPlanilha);
+      XLSX.utils.book_append_sheet(wb, ws, "Processos");
+      XLSX.writeFile(wb, `JUD_IAZ_Processos_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      exibirToast("Planilha Excel gerada com sucesso!");
     }
 
     function exportarPDF() {
       const filtrados = obterProcessosFiltrados();
       if (!filtrados.length) return alert("Nenhum processo para exportar.");
+
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: "landscape" });
-      doc.text("IAZ Jud - Relatório Supabase", 14, 15);
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+      doc.setFontSize(14);
+      doc.setTextColor(0, 13, 60);
+      doc.text("JUD IAZ - Relatório de Processos Monitorados", 14, 15);
+
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR")} | Total de processos: ${filtrados.length}`, 14, 21);
+
+      const colunas = ["Empresa", "Apelido", "Processo (CNJ)", "Tribunal", "Tipo", "Status", "Últ. Movimentação", "Verificação"];
+      const linhas = filtrados.map(p => [
+        obterNomeEmpresa(p.empresa),
+        p.apelido || "-",
+        p.processo,
+        p.tribunal || "-",
+        p.tipo || "-",
+        p.status || "Ativo",
+        formatarDataHora(p.ultimaData),
+        formatarDataVerificacao(p.ultima_verificacao)
+      ]);
+
       doc.autoTable({
-        head: [["Empresa", "Processo", "Apelido", "Tribunal", "Verificado", "Status", "Vara", "Última Mov."]],
-        body: filtrados.map(p => [
-          obterNomeEmpresa(p.empresa),
-          p.processo,
-          p.apelido || "-",
-          p.tribunal || "-",
-          formatarDataVerificacao(p.ultima_verificacao),
-          p.status || "Ativo",
-          p.vara || "-",
-          formatarDataHora(p.ultimaData)
-        ]),
-        startY: 22, theme: 'grid', styles: { fontSize: 8 }
+        head: [colunas],
+        body: linhas,
+        startY: 25,
+        theme: "striped",
+        headStyles: { fillColor: [0, 13, 60], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
+        bodyStyles: { fontSize: 7.5, cellPadding: 2 },
+        alternateRowStyles: { fillColor: [244, 245, 247] }
       });
-      doc.save(`IAZ_Jud_Relatorio_${new Date().toISOString().slice(0, 10)}.pdf`);
+
+      doc.save(`JUD_IAZ_Relatorio_${new Date().toISOString().slice(0, 10)}.pdf`);
+      exibirToast("Relatório PDF gerado com sucesso!");
     }
 
     function renderProcessos() {
       const filtrados = obterProcessosFiltrados();
       const container = document.getElementById("processosContainer");
       let ativos = 0, suspensos = 0, arquivados = 0;
+
       filtrados.forEach(p => {
         const st = (p.status || "Ativo").trim().toLowerCase();
         if (st.includes("arquiv")) arquivados++;
         else if (st.includes("susp")) suspensos++;
         else ativos++;
       });
-      document.getElementById("countAtivos").innerText = ativos;
-      document.getElementById("countSuspensos").innerText = suspensos;
-      document.getElementById("countArquivados").innerText = arquivados;
+
+      // Atualiza Contadores respeitando o Modo Olho (Privacidade)
+      const elAtivos = document.getElementById("countAtivos");
+      const elSuspensos = document.getElementById("countSuspensos");
+      const elArquivados = document.getElementById("countArquivados");
+
+      if (elAtivos) elAtivos.innerText = modoPrivacidade ? "••••" : ativos;
+      if (elSuspensos) elSuspensos.innerText = modoPrivacidade ? "••••" : suspensos;
+      if (elArquivados) elArquivados.innerText = modoPrivacidade ? "••••" : arquivados;
 
       if (!filtrados.length) {
-        container.innerHTML = `<div class="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-slate-500 text-sm">Nenhum processo encontrado.</div>`;
+        container.innerHTML = `
+          <div class="bg-white dark:bg-[#151f32] p-8 rounded-3xl border border-slate-200/80 dark:border-[#293548] text-center text-slate-500 dark:text-slate-400 text-xs shadow-2xs">
+            Nenhum processo localizado para os filtros selecionados.
+          </div>`;
         return;
       }
 
@@ -1401,52 +1990,100 @@
           const dataVerif = formatarDataVerificacao(p.ultima_verificacao);
           const verifCor = p.ultima_verificacao 
             ? 'text-slate-500 dark:text-slate-400' 
-            : 'text-amber-600 dark:text-amber-400 font-semibold';
+            : 'text-[#ec7000] dark:text-[#ffb800] font-bold';
+
+          // Status Badge Sem Verde no App
+          let statusBadgeClass = 'bg-blue-50 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80';
+          const stLower = (p.status || "Ativo").toLowerCase();
+          if (stLower.includes("susp")) {
+            statusBadgeClass = 'bg-amber-50 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/80';
+          } else if (stLower.includes("arquiv")) {
+            statusBadgeClass = 'bg-rose-50 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/80';
+          }
+
+          const processoExibido = modoPrivacidade ? "•••••••••••••••••••••" : p.processo;
+          const apelidoExibido = p.apelido || 'Sem apelido';
+
           return `
-          <details ontoggle="aoAbrirProcesso(this, '${cleanId}', '${p.processo}')" class="group/item bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm mb-2.5">
-            <summary class="cursor-pointer select-none p-3.5 sm:p-4 bg-white dark:bg-slate-950">
+          <details ontoggle="aoAbrirProcesso(this, '${cleanId}', '${p.processo}')" 
+            class="group/item bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] rounded-2xl overflow-hidden shadow-2xs mb-2.5 transition-all">
+            <summary class="cursor-pointer select-none p-3.5 sm:p-4 bg-white dark:bg-[#151f32] hover:bg-slate-50/60 dark:hover:bg-[#1e293b]/60 transition">
               <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
                 <div class="flex items-center gap-2 flex-wrap min-w-0">
-                  <span class="text-sm font-bold text-slate-900 dark:text-slate-100">${p.apelido || 'Sem apelido'}</span>
-                  ${p.empresa ? `<span class="px-2 py-0.5 text-[11px] font-semibold rounded bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300">🏢 ${obterNomeEmpresa(p.empresa)}</span>` : ''}
+                  <span class="text-sm font-bold text-slate-900 dark:text-white">${apelidoExibido}</span>
+                  ${p.empresa ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">🏢 ${obterNomeEmpresa(p.empresa)}</span>` : ''}
                 </div>
-                <span class="px-2 py-0.5 text-xs font-semibold rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">${p.status || 'Ativo'}</span>
+                <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full ${statusBadgeClass}">${p.status || 'Ativo'}</span>
               </div>
-              <div class="flex items-center justify-between text-xs text-slate-500 gap-2 flex-wrap">                
+
+              <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-2 flex-wrap">                
                 <div class="flex items-center gap-2 flex-wrap min-w-0">
-                  <span class="font-mono text-slate-700 dark:text-slate-300 font-semibold">${p.processo}</span>
-                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700">
+                  <span class="font-mono text-slate-800 dark:text-slate-200 font-bold">${processoExibido}</span>
+                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-[#1e293b] text-slate-700 dark:text-slate-300 font-semibold border border-slate-200/80 dark:border-[#293548]">
                     🏛️ ${p.tribunal || 'Tribunal'}
                   </span>
-                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 ${verifCor}">
-                    🕒 Verificado: ${dataVerif}
+                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] ${verifCor}">
+                    🕒 ${dataVerif}
                   </span>
                 </div>
-                <span id="dias-${cleanId}">⏱️ ${calcularDiasDesde(p.ultimaData)}</span>
+                <span id="dias-${cleanId}" class="font-semibold text-slate-600 dark:text-slate-300">⏱️ ${calcularDiasDesde(p.ultimaData)}</span>
               </div>
             </summary>
-            <div class="px-4 pb-4 pt-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 space-y-3">
-              <div class="flex items-center justify-between flex-wrap gap-2 pt-1 pb-2 border-b border-slate-200 dark:border-slate-800">
-                <div class="flex items-center gap-1.5">
-                  <button id="btn-sync-${cleanId}" onclick="sincronizarProcessoIndividual('${p.processo}', '${p.tribunal}')" class="px-2.5 py-1 text-amber-600 border border-amber-300 rounded-md text-xs font-semibold">⚡ Atualizar</button>
-                  <button id="btn-email-${cleanId}" onclick="enviarEmailProcesso('${p.processo}')" class="px-2.5 py-1 text-blue-600 border border-blue-300 rounded-md text-xs font-semibold">✉️ E-mail</button>
-                  <button onclick='abrirEditar(${JSON.stringify(p)})' class="px-2.5 py-1 text-slate-600 border border-slate-300 rounded-md text-xs">✏️ Editar</button>
-                  <button onclick="excluirProcesso('${p.processo}')" class="px-2.5 py-1 text-red-600 border border-red-300 rounded-md text-xs">🗑️ Excluir</button>
+
+            <div class="px-4 pb-4 pt-3 border-t border-slate-200/80 dark:border-[#293548] bg-slate-50/50 dark:bg-[#0b1120]/40 space-y-3">
+              <!-- Ações do Processo -->
+              <div class="flex items-center justify-between flex-wrap gap-2 pt-1 pb-2 border-b border-slate-200/80 dark:border-[#293548]">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <button id="btn-sync-${cleanId}" onclick="sincronizarProcessoIndividual('${p.processo}', '${p.tribunal}')" 
+                    class="px-2.5 py-1 bg-[#ff6200]/10 hover:bg-[#ff6200] text-[#ec7000] hover:text-white border border-[#ff6200]/30 rounded-xl text-xs font-bold transition">
+                    ⚡ Atualizar
+                  </button>
+                  <button id="btn-email-${cleanId}" onclick="enviarEmailProcesso('${p.processo}')" 
+                    class="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-600 hover:text-white text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-xl text-xs font-semibold transition">
+                    ✉️ E-mail
+                  </button>
+                  <button onclick='abrirEditar(${JSON.stringify(p)})' 
+                    class="px-2.5 py-1 bg-white dark:bg-[#151f32] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-[#293548] hover:border-[#ff6200] rounded-xl text-xs font-semibold transition">
+                    ✏️ Editar
+                  </button>
+                  <button onclick="excluirProcesso('${p.processo}')" 
+                    class="px-2.5 py-1 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 rounded-xl text-xs font-semibold hover:bg-rose-600 hover:text-white transition">
+                    🗑️ Excluir
+                  </button>
                 </div>
-                <div class="flex flex-col items-end gap-0.5">${obterLinksTribunal(p.processo, p.tribunal).map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="text-xs text-blue-600 dark:text-blue-400 font-semibold">🔗 Abrir no ${l.nome}</a>`).join('')}</div>
+                <div class="flex flex-col items-end gap-0.5">
+                  ${obterLinksTribunal(p.processo, p.tribunal).map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="text-xs text-[#ec7000] dark:text-[#ffb800] hover:underline font-bold">🔗 ${l.nome}</a>`).join('')}
+                </div>
               </div>
+
+              <!-- Detalhes do Processo -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                ${p.reclamante ? `<div><span class="text-slate-400 text-[11px] block uppercase font-semibold">Reclamante (Autor)</span><span class="font-semibold text-slate-800 dark:text-slate-200">${p.reclamante}</span></div>` : ''}
+                ${p.reclamado ? `<div><span class="text-slate-400 text-[11px] block uppercase font-semibold">Reclamado (Réu)</span><span class="font-semibold text-slate-800 dark:text-slate-200">${p.reclamado}</span></div>` : ''}
+                ${p.vara ? `<div class="sm:col-span-2"><span class="text-slate-400 text-[11px] block uppercase font-semibold">Vara</span><span class="font-semibold text-slate-800 dark:text-slate-200">${p.vara}</span></div>` : ''}
+              </div>
+
+              <!-- Histórico de Movimentações -->
               <div>
-                <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2">📜 Histórico de Movimentações</h4>
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2 flex items-center justify-between">
+                  <span>📜 Histórico de Movimentações</span>
+                  <span class="text-[10px] text-[#ec7000] font-mono lowercase">DataJud CNJ</span>
+                </h4>
                 <div id="hist-inline-${cleanId}" class="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  <div class="text-center py-3 text-xs text-slate-400">Clique para carregar...</div>
+                  <div class="text-center py-3 text-xs text-slate-400">Clique para carregar histórico...</div>
                 </div>
               </div>
             </div>
           </details>`;
         }).join('');
-        return `<details class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm mb-3">
-          <summary class="cursor-pointer px-4 py-3.5 flex items-center justify-between font-bold text-sm"><span>📁 ${tipo} (${lista.length})</span></summary>
-          <div class="p-3 bg-slate-100/60 dark:bg-slate-950/40">${htmlProcessos}</div>
+
+        return `
+        <details class="group bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] rounded-3xl overflow-hidden shadow-2xs mb-3" open>
+          <summary class="cursor-pointer px-4 py-3.5 flex items-center justify-between font-bold text-sm bg-slate-50/70 dark:bg-[#1e293b]/70 border-b border-slate-200/80 dark:border-[#293548]">
+            <span class="text-slate-900 dark:text-white font-extrabold">📁 ${tipo} (${lista.length})</span>
+            <span class="text-xs text-[#ec7000] font-bold">Ver todos →</span>
+          </summary>
+          <div class="p-3 bg-slate-100/50 dark:bg-[#0b1120]/50">${htmlProcessos}</div>
         </details>`;
       }).join('');
     }
@@ -1454,9 +2091,9 @@
     async function aoAbrirProcesso(detailsEl, cleanId, numProcesso) {
       if (!detailsEl.open) return;
       const box = document.getElementById(`hist-inline-${cleanId}`);
-      if (box.dataset.loaded === "true") return;
+      if (!box || box.dataset.loaded === "true") return;
 
-      box.innerHTML = `<div class="text-center py-3 text-xs text-slate-500">Carregando histórico do Supabase...</div>`;
+      box.innerHTML = `<div class="text-center py-3 text-xs text-slate-400">Carregando histórico do Supabase...</div>`;
 
       try {
         const rows = await supabaseRequest(`ju_movimentacoes?processo=eq.${encodeURIComponent(numProcesso)}&select=*&order=data_movimentacao.desc`);
@@ -1465,15 +2102,15 @@
           const lblDias = document.getElementById(`dias-${cleanId}`);
           if (lblDias) lblDias.innerText = `⏱️ ${calcularDiasDesde(maisRecente.data_movimentacao)}`;
           box.innerHTML = rows.map(m => `
-            <div class="border-l-2 border-blue-500 pl-3 py-2 bg-white dark:bg-slate-950 rounded-r-lg border border-slate-200 dark:border-slate-800 text-xs shadow-sm">
-              <div class="flex items-center justify-between text-[10px] text-slate-500 font-mono mb-1">
+            <div class="border-l-3 border-[#ff6200] pl-3 py-2 bg-white dark:bg-[#151f32] rounded-r-xl border border-slate-200/80 dark:border-[#293548] text-xs shadow-2xs">
+              <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-1">
                 <span>📅 ${formatarDataHora(m.data_movimentacao)}</span>
               </div>
-              <p class="text-slate-800 dark:text-slate-200 font-medium leading-relaxed">${m.atualizacao}</p>
+              <p class="text-slate-800 dark:text-slate-200 font-semibold leading-relaxed">${m.atualizacao}</p>
             </div>`).join('');
           box.dataset.loaded = "true";
         } else {
-          box.innerHTML = `<div class="text-center py-3 text-xs text-slate-400">Nenhuma movimentação registrada no banco. Clique em "Atualizar" para sincronizar do DataJud.</div>`;
+          box.innerHTML = `<div class="text-center py-3 text-xs text-slate-400">Nenhuma movimentação registrada. Clique em "Atualizar" para sincronizar com o DataJud.</div>`;
           box.dataset.loaded = "true";
         }
       } catch (e) {
@@ -1485,13 +2122,6 @@
       const cleanId = String(numProcesso).replace(/\D/g, '');
       const btn = document.getElementById(`btn-sync-${cleanId}`);
       if (btn) btn.innerText = "Buscando...";
-
-      if (IS_GITHUB_PAGES && !usaApiLocal()) {
-        alert(`O processo ${numProcesso} é monitorado automaticamente na nuvem a cada 2 horas pelo GitHub Actions.\n\nRecarregando dados mais recentes do Supabase...`);
-        await carregarProcessos();
-        if (btn) btn.innerText = "⚡ Atualizar";
-        return;
-      }
 
       try {
         const baseUrl = API_URL.replace(/\/+$/, '');
@@ -1525,10 +2155,8 @@
           if (ultimaMovData) patchPayload.ultima_data = ultimaMovData;
           if (dadosProcesso.tribunal && !tribunal) patchPayload.tribunal = dadosProcesso.tribunal;
 
-          // 1. Atualiza na tabela processos com data de verificação atual
           await supabaseRequest(`ju_processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", patchPayload);
 
-          // 2. Insere movimentos no histórico em batch
           if (dadosProcesso.movimentos && dadosProcesso.movimentos.length > 0) {
             const batch = dadosProcesso.movimentos.map(m => ({
               processo: numProcesso,
@@ -1538,18 +2166,17 @@
             await supabaseRequest("ju_movimentacoes", "POST", batch, { "Prefer": "resolution=merge-duplicates" }).catch(() => {});
           }
 
-          alert("Processo verificado e atualizado com sucesso no Supabase!");
+          exibirToast(`Processo ${numProcesso} atualizado com sucesso!`);
           await carregarProcessos();
         } else {
-          // Marca última verificação mesmo se tribunal não retornou novas movs
           await supabaseRequest(`ju_processos?processo=eq.${encodeURIComponent(numProcesso)}`, "PATCH", {
             ultima_verificacao: new Date().toISOString()
           }).catch(() => {});
-          alert(json.mensagem || "Processo não retornado pelo DataJud para este tribunal.");
+          exibirToast(json.mensagem || "Não localizado no DataJud para este tribunal.", "erro");
           await carregarProcessos();
         }
       } catch (e) {
-        alert("Erro ao consultar DataJud: " + e.message + "\n\nCertifique-se de que o servidor local está ativo: py server.py");
+        alert("Erro ao consultar DataJud: " + e.message);
       } finally {
         if (btn) btn.innerText = "⚡ Atualizar";
       }
@@ -1562,23 +2189,24 @@
         const res = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "send_email_processo", processo: numProcesso })
-        }).then(r => r.json());
-        alert(res.message || res.error || "Operação realizada.");
+          body: JSON.stringify({ action: "enviar_email", processo: numProcesso })
+        });
+        const json = await res.json();
+        alert(json.mensagem || "E-mail enviado com sucesso!");
       } catch (e) {
-        alert("Erro ao enviar e-mail: " + e.message);
+        alert("Erro ao disparar e-mail: " + e.message);
       }
     }
 
     function adicionarLogSync(mensagem, tipo = "info") {
       const box = document.getElementById("syncLogBox");
       if (!box) return;
-      let cor = "text-emerald-400";
-      if (tipo === "error") cor = "text-rose-400";
-      if (tipo === "warn") cor = "text-amber-400";
-      if (tipo === "success") cor = "text-cyan-400 font-bold";
-
-      box.innerHTML += `<div class="${cor}">[${new Date().toLocaleTimeString()}] ${mensagem}</div>`;
+      const hora = new Date().toLocaleTimeString("pt-BR");
+      let cor = "text-slate-600 dark:text-slate-300";
+      if (tipo === "error") cor = "text-rose-500 font-bold";
+      if (tipo === "success") cor = "text-blue-500 dark:text-blue-400 font-bold";
+      if (tipo === "warn") cor = "text-[#ec7000] font-semibold";
+      box.innerHTML += `<div class="${cor}"><span class="text-slate-400">[${hora}]</span> ${mensagem}</div>`;
       box.scrollTop = box.scrollHeight;
     }
 
@@ -1588,21 +2216,8 @@
     }
 
     async function sincronizarDataJud() {
-      if (!processosData || processosData.length === 0) {
+      if (!processosData.length) {
         alert("Nenhum processo carregado para sincronizar.");
-        return;
-      }
-
-      if (IS_GITHUB_PAGES && !usaApiLocal()) {
-        const querAbrir = confirm(
-          "☁️ Monitoramento 100% em Nuvem Ativo!\n\n" +
-          "Todos os processos são consultados no DataJud e atualizados no Supabase a cada 2 horas pelo GitHub Actions.\n\n" +
-          "Deseja abrir o painel do GitHub Actions para executar uma sincronização agora?"
-        );
-        if (querAbrir) {
-          window.open(`${GITHUB_REPO_URL}/actions/workflows/sync-processos.yml`, '_blank');
-        }
-        await carregarProcessos();
         return;
       }
 
@@ -1616,11 +2231,11 @@
 
       modal.classList.remove("hidden");
       btnConcluir.disabled = true;
-      btnConcluir.className = "px-4 py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg text-sm font-medium cursor-not-allowed transition";
+      btnConcluir.className = "px-4 py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-semibold cursor-not-allowed";
       btnClose.classList.add("hidden");
       logBox.innerHTML = "";
 
-      adicionarLogSync(`Iniciando sincronização de ${processosData.length} processos direto com Supabase...`, "info");
+      adicionarLogSync(`Iniciando sincronização de ${processosData.length} processos direto com Supabase e CNJ...`, "info");
 
       const total = processosData.length;
       let concluidos = 0;
@@ -1634,8 +2249,6 @@
         const p = processosData[i];
         const num = p.processo;
         const trib = p.tribunal || "";
-
-        adicionarLogSync(`[${i + 1}/${total}] Consultando ${num} (${trib || 'Auto'})...`, "info");
 
         try {
           const res = await fetch(endpoint, {
@@ -1653,8 +2266,8 @@
 
           if (json.success && json.data) {
             const dadosProcesso = json.data;
-            const ultimaMovData = (dadosProcesso.movimentos && dadosProcesso.movimentos.length > 0) 
-                                  ? dadosProcesso.movimentos[0].dataHora 
+            const ultimaMovData = (dadosProcesso.movimentos && dadosProcesso.movimentos.length > 0)
+                                  ? dadosProcesso.movimentos[0].dataHora
                                   : dadosProcesso.ultimaData;
 
             const patchPayload = { ultima_verificacao: agoraIso };
@@ -1695,7 +2308,7 @@
 
       adicionarLogSync(`--- Finalizado! Atualizados: ${sucessos} | Não encontrados/Erros: ${falhas} ---`, "success");
       btnConcluir.disabled = false;
-      btnConcluir.className = "px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition";
+      btnConcluir.className = "px-5 py-2 bg-[#ff6200] hover:bg-[#ec7000] text-white rounded-xl text-xs font-bold transition";
       btnClose.classList.remove("hidden");
     }
 
@@ -1718,12 +2331,14 @@
       await supabaseRequest("ju_processos", "POST", payload, { "Prefer": "resolution=merge-duplicates" });
       closeProcessModal();
       await carregarProcessos();
+      exibirToast(`Processo ${processo} salvo com sucesso!`);
     }
 
     async function excluirProcesso(numProcesso) {
       if (!confirm(`Excluir processo ${numProcesso}?`)) return;
       await supabaseRequest(`ju_processos?processo=eq.${encodeURIComponent(numProcesso)}`, "DELETE");
       await carregarProcessos();
+      exibirToast("Processo excluído!");
     }
 
     function aoDigitarProcesso(valor) {
@@ -1733,24 +2348,33 @@
         if (j === "8") {
           const tjs = { "06": "TJCE", "26": "TJSP", "13": "TJMG", "19": "TJRJ", "21": "TJRS", "16": "TJPR", "17": "TJPE", "05": "TJBA" };
           document.getElementById("campoTribunal").value = tjs[tr] || `TJ-${tr}`;
+        } else if (j === "5") {
+          document.getElementById("campoTribunal").value = `TRT${parseInt(tr, 10)}`;
+        } else if (j === "4") {
+          document.getElementById("campoTribunal").value = `TRF${parseInt(tr, 10)}`;
+        } else if (j === "3") {
+          document.getElementById("campoTribunal").value = "STJ";
         }
       }
     }
 
     function openProcessModal() {
+      setTelaAtiva('novo');
       document.getElementById("processForm").reset();
+      document.getElementById("formMode").value = "add";
       document.getElementById("modalTitle").innerText = "Novo Processo";
       document.getElementById("campoProcesso").readOnly = false;
       document.getElementById("processModal").classList.remove("hidden");
     }
 
     function abrirEditar(p) {
-      document.getElementById("modalTitle").innerText = "Editar Processo";
+      document.getElementById("formMode").value = "edit";
+      document.getElementById("modalTitle").innerText = `Editar Processo`;
       document.getElementById("campoProcesso").value = p.processo;
       document.getElementById("campoProcesso").readOnly = true;
-      document.getElementById("campoEmpresa").value = p.empresa || "";
       document.getElementById("campoApelido").value = p.apelido || "";
       document.getElementById("campoTribunal").value = p.tribunal || "";
+      document.getElementById("campoEmpresa").value = p.empresa || "";
       document.getElementById("campoTipo").value = p.tipo || "Cível";
       document.getElementById("campoReclamante").value = p.reclamante || "";
       document.getElementById("campoReclamado").value = p.reclamado || "";
@@ -1760,56 +2384,35 @@
       document.getElementById("processModal").classList.remove("hidden");
     }
 
-    function closeProcessModal() { document.getElementById("processModal").classList.add("hidden"); }
+    function closeProcessModal() { 
+      document.getElementById("processModal").classList.add("hidden"); 
+      setTelaAtiva('processos');
+    }
+
     function openEmpresaModal() {
-      document.getElementById("empresaForm").reset();
+      setTelaAtiva('empresas');
       limparLogoForm();
+      document.getElementById("empresaForm").reset();
       document.getElementById("campoEmpCodigo").value = gerarProximoCodigoEmpresa();
       document.getElementById("empresaModal").classList.remove("hidden");
+      renderizarListaEmpresasModal();
     }
-    function closeEmpresaModal() { document.getElementById("empresasListaContainer").innerHTML = ""; document.getElementById("empresaModal").classList.add("hidden"); }
+
+    function closeEmpresaModal() { 
+      document.getElementById("empresasListaContainer").innerHTML = ""; 
+      document.getElementById("empresaModal").classList.add("hidden"); 
+      setTelaAtiva('processos');
+    }
+
     function openConfigModal() {
       document.getElementById("apiUrlInput").value = API_URL;
       aplicarTema(CONFIG_GLOBAL.app_theme || "dark");
       document.getElementById("configModal").classList.remove("hidden");
     }
-    function closeConfigModal() { document.getElementById("configModal").classList.add("hidden"); }
+
+    function closeConfigModal() { 
+      document.getElementById("configModal").classList.add("hidden"); 
+    }
   </script>
-
-  <!-- MODAL DE PROGRESSO E LOGS DA SINCRONIZAÇÃO -->
-  <div id="syncModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-2xl p-5 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-        <div>
-          <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Sincronizando Processos</h3>
-          <p id="syncStatusSubtitle" class="text-xs text-slate-500 dark:text-slate-400">Aguarde enquanto consultamos o DataJud...</p>
-        </div>
-        <button id="btnCloseSyncModal" onclick="fecharSyncModal()" class="hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1">✕</button>
-      </div>
-
-      <!-- Barra de Progresso -->
-      <div class="space-y-1.5">
-        <div class="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
-          <span id="syncProgressText">0 / 0 concluídos</span>
-          <span id="syncPercentText">0%</span>
-        </div>
-        <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
-          <div id="syncProgressBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-        </div>
-      </div>
-
-      <!-- Caixa de Log em Tempo Real -->
-      <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Log de Atualizações</label>
-        <div id="syncLogBox" class="w-full h-44 bg-slate-950 text-emerald-400 font-mono text-[11px] p-3 rounded-lg overflow-y-auto space-y-1 border border-slate-800">
-          <div class="text-slate-500">[Sistema] Inicializando sincronização com o Supabase e DataJud...</div>
-        </div>
-      </div>
-
-      <div class="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
-        <button id="btnConcluirSync" disabled onclick="fecharSyncModal()" class="px-4 py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg text-sm font-medium cursor-not-allowed transition">Fechar</button>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
