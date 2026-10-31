@@ -356,6 +356,18 @@ body.dark-theme .pilula .pilula-texto,
 
         <!-- Direita: Ícones Redondos (Buscar · Ajuda · Tema · Sincronizar) -->
         <div class="flex items-center gap-1 sm:gap-1.5">
+        <button id="btnEyeToggle" onclick="toggleModoPrivacidade()" class="p-2 rounded-full hover:bg-white/10 text-white transition" title="Ocultar/Exibir Contadores e Valores" aria-label="Ocultar ou mostrar valores">
+            <svg id="eyeIconOpen" class="w-4 h-4 text-[#ff6200]" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg id="eyeIconClosed" class="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+            <span id="eyeText" class="hidden">Valores</span>
+          </button>
+
           <!-- 1. Buscar (Lupa) -->
           <button id="btnNavBuscar" onclick="alternarBarraBusca()" 
             class="p-2 rounded-full hover:bg-white/10 text-slate-200 transition" 
@@ -413,32 +425,8 @@ body.dark-theme .pilula .pilula-texto,
     <main class="-mt-4 rounded-t-[26px] bg-[#f4f5f7] dark:bg-[#0b1120] min-h-[calc(100vh-80px)] px-3.5 sm:px-6 pt-5 pb-16 transition-colors duration-200 z-10 flex-1">
       <div class="max-w-5xl mx-auto space-y-4">
 
-        <!-- CABEÇALHO DA TELA: TÍTULO + BOTÃO DE OLHO -->
-        <div class="flex items-center justify-between pb-1">
-          <div>
-            <h2 id="screenTitle" class="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Processos Judiciais
-            </h2>
-            <p id="screenSubtitle" class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-              Monitoramento integrado Supabase e DataJud (CNJ)
-            </p>
-          </div>
-
-          <!-- Botão de Olho (Privacidade para ocultar/mostrar valores com ••••) -->
-          <button id="btnEyeToggle" onclick="toggleModoPrivacidade()" 
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] text-slate-600 dark:text-slate-300 hover:text-[#ff6200] dark:hover:text-[#ff6200] text-xs font-semibold shadow-2xs transition"
-            title="Ocultar/Exibir Contadores e Valores">
-            <svg id="eyeIconOpen" class="w-4 h-4 text-[#ff6200]" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            <svg id="eyeIconClosed" class="w-4 h-4 text-slate-400 hidden" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-              <line x1="1" y1="1" x2="23" y2="23"></line>
-            </svg>
-            <span id="eyeText" class="hidden sm:inline">Valores</span>
-          </button>
-        </div>
+                <!-- Título e subtítulo da tela (ocultos; o script ainda os atualiza) -->
+        <div class="hidden"><h2 id="screenTitle"></h2><p id="screenSubtitle"></p></div>
 
         <!-- MENU DE ATALHOS EM SQUIRCLES (Navegação Principal visível em TODAS as telas) -->
         <nav class="flex items-center justify-between gap-1 sm:gap-3 py-1 select-none overflow-x-hidden" aria-label="Navegação rápida">
