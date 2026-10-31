@@ -2,7 +2,7 @@
   "name": "JUD IAZ - Monitoramento Processual",
   "short_name": "JUD IAZ",
   "description": "Sistema de monitoramento de processos judiciais no Padrão Visual IAZ",
-  "start_url": "./index.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#000d3c",
   "theme_color": "#000d3c",
@@ -24,5 +24,7 @@
       "sizes": "any",
       "type": "image/svg+xml"
     }
-  ]
+  ],
+  "id": "./",
+  "scope": "./"
 }

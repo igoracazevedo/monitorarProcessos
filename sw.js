@@ -1,7 +1,8 @@
-const CACHE_NAME = "iaz-jud-cache-v3";
+const CACHE_NAME = "iaz-jud-cache-v4";
+// "./index.html" fica de fora: a Vercel redireciona para "./" (cleanUrls) e uma resposta
+// redirecionada guardada no cache não pode ser usada para abrir o app instalado.
 const ASSETS = [
   "./",
-  "./index.html",
   "./manifest.json",
   "./icon.png",
   "./icon-192.png",
@@ -9,10 +10,12 @@ const ASSETS = [
   "./icon.svg"
 ];
 
-// Instala o service worker e faz cache inicial
+// Instala o service worker e faz cache inicial (uma falha em um arquivo não impede a instalação)
 self.addEventListener("install", (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(ASSETS.map((a) => cache.add(a).catch(() => null)))
+    )
   );
   self.skipWaiting();
 });
@@ -27,21 +30,22 @@ self.addEventListener("activate", (e) => {
   self.clients.claim();
 });
 
-// Network-first para chamadas à API REST (Supabase e DataJud), cache-first para estáticos
 self.addEventListener("fetch", (e) => {
-  const url = e.request.url;
-  if (url.includes("supabase.co") || url.includes("datajud.cnj.jus.br") || e.request.method !== "GET") {
-    return; // Passa direto para a rede sem cachear dados dinâmicos do banco
+  const req = e.request;
+  const url = req.url;
+  // Supabase, DataJud e métodos não-GET vão direto para a rede
+  if (url.includes("supabase.co") || url.includes("datajud.cnj.jus.br") || req.method !== "GET") {
+    return;
   }
 
-  e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      return (
-        cachedResponse ||
-        fetch(e.request).then((networkResponse) => {
-          return networkResponse;
-        })
-      );
-    })
-  );
+  // Abertura do app (navegação): rede primeiro; o cache serve só como reserva offline
+  if (req.mode === "navigate") {
+    e.respondWith(
+      fetch(req).catch(() => caches.match("./").then((r) => r || Response.error()))
+    );
+    return;
+  }
+
+  // Estáticos: cache primeiro
+  e.respondWith(caches.match(req).then((cached) => cached || fetch(req)));
 });
