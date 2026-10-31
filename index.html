@@ -157,6 +157,40 @@ html:not(.dark):not(.dark-theme) textarea:focus {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 3px rgba(255, 98, 0, 0.18);
 }
 </style>
+    <style>
+/* ==========================================
+   PÍLULA DO LOGO (padrão NotaSync)
+   Claro: vidro claro com texto azul-marinho · Escuro: grafite com texto azul claro
+   ========================================== */
+.pilula {
+  background-color: rgba(255, 255, 255, 0.55) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 28px rgba(15, 23, 42, 0.08);
+}
+.pilula .pilula-texto {
+  color: #000d3c !important;
+}
+html.dark .pilula,
+html.dark-theme .pilula,
+body.dark .pilula,
+body.dark-theme .pilula,
+.dark .pilula,
+.dark-theme .pilula {
+  background-color: #151f32 !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+html.dark .pilula .pilula-texto,
+html.dark-theme .pilula .pilula-texto,
+body.dark .pilula .pilula-texto,
+body.dark-theme .pilula .pilula-texto,
+.dark .pilula .pilula-texto,
+.dark-theme .pilula .pilula-texto {
+  color: #bfdbfe !important;
+}
+</style>
 </head>
 <body class="bg-[#f4f5f7] dark:bg-[#0b1120] text-slate-800 dark:text-slate-200 min-h-screen transition-colors duration-150">
 
@@ -313,11 +347,11 @@ html:not(.dark):not(.dark-theme) textarea:focus {
         </div>
 
         <!-- Centro: Brand JUD IAZ (Sem slogans no cabeçalho) -->
-        <div class="flex items-center gap-2 rounded-2xl bg-white px-2 py-1 shadow-sm select-none cursor-pointer" onclick="setTelaAtiva('processos')">
+        <div class="pilula flex items-center gap-2 rounded-2xl bg-white px-2.5 py-1.5 shadow-sm select-none cursor-pointer" onclick="setTelaAtiva('processos')">
           <div class="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#001652] to-[#000d3c] border border-[#ff6200] flex items-center justify-center shadow-sm">
             <span class="text-[11px] font-black tracking-tight text-[#ffb800]">iaz</span>
           </div>
-          <span class="text-base sm:text-lg font-black tracking-tight text-[#000d3c]">JUD IAZ</span>
+          <span class="pilula-texto text-base sm:text-lg font-black tracking-tight text-[#000d3c]">JUD IAZ</span>
         </div>
 
         <!-- Direita: Ícones Redondos (Buscar · Ajuda · Tema · Sincronizar) -->
