@@ -201,9 +201,7 @@ body.dark-theme .pilula .pilula-texto,
   <!-- Loading Inicial -->
   <div id="authLoadingScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#000d3c] text-slate-200">
     <div class="flex flex-col items-center gap-4">
-      <div class="w-14 h-14 rounded-[18px] bg-gradient-to-br from-[#001652] to-[#000d3c] border-2 border-[#ff6200] flex items-center justify-center shadow-lg">
-        <span class="text-xl font-black text-[#ffb800] tracking-tight">iaz</span>
-      </div>
+      <img src="./icon-192.png" alt="" class="w-14 h-14 rounded-[18px] shadow-lg">
       <div class="h-8 w-8 animate-spin rounded-full border-3 border-[#ff6200] border-t-transparent"></div>
       <p class="text-xs font-semibold text-slate-300 uppercase tracking-widest">JUD IAZ • Carregando...</p>
     </div>
@@ -213,9 +211,7 @@ body.dark-theme .pilula .pilula-texto,
   <div id="loginScreen" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-[#000d3c] p-4">
     <div class="w-full max-w-sm rounded-[24px] border border-white/10 bg-[#001652]/90 p-8 text-center shadow-2xl backdrop-blur-md space-y-5">
       <!-- Logo Squircle -->
-      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-[20px] bg-gradient-to-br from-[#001652] to-[#000d3c] border-2 border-[#ff6200] shadow-md">
-        <span class="text-2xl font-black tracking-tight text-[#ffb800]">iaz</span>
-      </div>
+      <img src="./icon-192.png" alt="" class="mx-auto h-16 w-16 rounded-[20px] shadow-md">
       <div>
         <h1 class="text-2xl font-black tracking-tight text-white">JUD IAZ</h1>
         <p class="text-xs text-[#ffb800] font-semibold mt-0.5 uppercase tracking-wider">Monitoramento Processual</p>
@@ -289,9 +285,7 @@ body.dark-theme .pilula .pilula-texto,
             class="hidden absolute left-0 mt-2 w-72 rounded-2xl bg-white dark:bg-[#151f32] text-slate-800 dark:text-slate-100 shadow-2xl border border-slate-200/80 dark:border-[#293548] p-3 z-50 transition-all text-xs">
             <!-- Header do Usuário -->
             <div class="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#1e293b] rounded-xl mb-2">
-              <div class="h-10 w-10 rounded-full bg-[#001652] text-[#ffb800] font-black text-sm flex items-center justify-center border border-[#ff6200]/40 flex-shrink-0">
-                iaz
-              </div>
+              <img src="./icon-192.png" alt="" class="h-10 w-10 rounded-full flex-shrink-0 object-cover">
               <div class="min-w-0 flex-1">
                 <p id="userNome" class="font-bold text-slate-900 dark:text-white truncate">Usuário</p>
                 <p id="userEmail" class="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">email</p>
@@ -348,9 +342,7 @@ body.dark-theme .pilula .pilula-texto,
 
         <!-- Centro: Brand JUD IAZ (Sem slogans no cabeçalho) -->
         <div class="pilula flex items-center gap-2 rounded-2xl bg-white px-2.5 py-1.5 shadow-sm select-none cursor-pointer" onclick="setTelaAtiva('processos')">
-          <div class="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#001652] to-[#000d3c] border border-[#ff6200] flex items-center justify-center shadow-sm">
-            <span class="text-[11px] font-black tracking-tight text-[#ffb800]">iaz</span>
-          </div>
+          <img src="./icon-192.png" alt="" class="w-8 h-8 rounded-[10px] shadow-sm">
           <span class="pilula-texto text-base sm:text-lg font-black tracking-tight text-[#000d3c]">JUD IAZ</span>
         </div>
 
@@ -1021,10 +1013,7 @@ body.dark-theme .pilula .pilula-texto,
         lg: { box: "w-14 h-14 rounded-[16px]", text: "text-xl" }
       };
       const conf = sizes[size] || sizes.md;
-      return `
-        <div class="${conf.box} bg-gradient-to-br from-[#001652] to-[#000d3c] border border-[#ff6200] flex items-center justify-center shadow-sm select-none">
-          <span class="${conf.text} font-black tracking-tight text-[#ffb800]">iaz</span>
-        </div>`;
+      return `<img src="./icon-192.png" alt="" class="${conf.box} shadow-sm select-none object-cover">`;
     }
 
     // Inicialização da Autenticação via Supabase
