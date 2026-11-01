@@ -1,36 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#001652"/>
-      <stop offset="100%" stop-color="#000d3c"/>
-    </linearGradient>
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffc933"/>
-      <stop offset="100%" stop-color="#ffb800"/>
-    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a1114"/><stop offset="1" stop-color="#0c0709"/></linearGradient>
+    <linearGradient id="acc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9aa8"/><stop offset="1" stop-color="#f43f5e"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".55" stop-color="#fff" stop-opacity=".14"/><stop offset="1" stop-color="#fff" stop-opacity=".07"/></linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".5" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#fff" stop-opacity=".6"/></linearGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="46"/></filter>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="14"/><feOffset dy="14"/><feComponentTransfer><feFuncA type="linear" slope=".5"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="r"><rect width="512" height="512" rx="116"/></clipPath>
   </defs>
-  <!-- Squircle com cantos bem arredondados (~22% de raio = 112px em 512px) e borda fina laranja -->
-  <rect x="12" y="12" width="488" height="488" rx="110" ry="110" fill="url(#bgGrad)" stroke="#ff6200" stroke-width="14"/>
-  
-  <!-- Ícone da Balança da Justiça / Escudo em Branco puro -->
-  <g transform="translate(256, 210)" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Haste central da balança -->
-    <line x1="0" y1="-80" x2="0" y2="70" stroke-width="18"/>
-    <!-- Travessão horizontal -->
-    <line x1="-100" y1="-50" x2="100" y2="-50" stroke-width="16"/>
-    <!-- Cúpula / topo -->
-    <circle cx="0" cy="-90" r="10" fill="#ffffff"/>
-    <!-- Base -->
-    <path d="M-45 70 L45 70" stroke-width="18"/>
-    <!-- Prato Esquerdo -->
-    <path d="M-100 -50 L-135 15 L-65 15 Z" stroke-width="10"/>
-    <path d="M-145 15 C-145 35 -55 35 -55 15 Z" fill="#ffffff" stroke-width="8"/>
-    <!-- Prato Direito -->
-    <path d="M100 -50 L65 15 L135 15 Z" stroke-width="10"/>
-    <path d="M55 15 C55 35 145 35 145 15 Z" fill="#ffffff" stroke-width="8"/>
+  <g clip-path="url(#r)">
+    <rect width="512" height="512" fill="url(#bg)"/>
+    <circle cx="120" cy="110" r="150" fill="#f43f5e" opacity=".85" filter="url(#blur)"/>
+    <circle cx="420" cy="430" r="150" fill="#be123c" opacity=".8" filter="url(#blur)"/>
+    <circle cx="400" cy="90" r="80" fill="#ff9aa8" opacity=".35" filter="url(#blur)"/>
+    <g filter="url(#sh)"><g fill="url(#glass)" stroke="url(#edge)" stroke-width="5" stroke-linejoin="round"><path d="M132 92h160l56 56v180a28 28 0 0 1-28 28H132a28 28 0 0 1-28-28V120a28 28 0 0 1 28-28z"/></g></g>
+    <g stroke="#fff" stroke-opacity=".7" stroke-width="14" stroke-linecap="round"><path d="M148 168h96M148 220h72"/></g>
+      <g fill="rgba(255,255,255,.14)" stroke="url(#acc)" stroke-width="22" filter="url(#glow)"><circle cx="292" cy="300" r="62"/></g>
+      <path d="M338 346l62 62" stroke="url(#acc)" stroke-width="28" stroke-linecap="round" filter="url(#glow)"/>
   </g>
-
-  <!-- Sigla "iaz" em Dourado #ffb800 -->
-  <text x="256" y="395" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="76" letter-spacing="3" fill="url(#goldGrad)" text-anchor="middle">iaz</text>
-  <circle cx="256" cy="425" r="5" fill="#ff6200"/>
 </svg>
