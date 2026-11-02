@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>JUD IAZ - Monitoramento Processual</title>
-  <meta name="theme-color" content="#000d3c" id="metaThemeColor">
+  <meta name="theme-color" content="#000000" id="metaThemeColor">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="./manifest.json">
@@ -216,7 +216,7 @@ body.dark-theme .pilula .pilula-texto,
   <!-- ========================================== -->
 
   <!-- Loading Inicial -->
-  <div id="authLoadingScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#000d3c] text-slate-200">
+  <div id="authLoadingScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black text-slate-200">
     <div class="flex flex-col items-center gap-4">
       <img src="./icon-192.png" alt="" class="w-14 h-14 rounded-[18px] shadow-lg">
       <div class="h-8 w-8 animate-spin rounded-full border-3 border-[#ff6200] border-t-transparent"></div>
@@ -225,8 +225,8 @@ body.dark-theme .pilula .pilula-texto,
   </div>
 
   <!-- Tela de Login -->
-  <div id="loginScreen" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-[#000d3c] p-4">
-    <div class="w-full max-w-sm rounded-[24px] border border-white/10 bg-[#001652]/90 p-8 text-center shadow-2xl backdrop-blur-md space-y-5">
+  <div id="loginScreen" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black p-4">
+    <div class="w-full max-w-sm rounded-[24px] border border-white/10 bg-neutral-900/90 p-8 text-center shadow-2xl backdrop-blur-md space-y-5">
       <!-- Logo Squircle -->
       <img src="./icon-192.png" alt="" class="mx-auto h-16 w-16 rounded-[20px] shadow-md">
       <div>
@@ -253,8 +253,8 @@ body.dark-theme .pilula .pilula-texto,
   </div>
 
   <!-- Tela de Acesso Negado -->
-  <div id="semAcessoScreen" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-[#000d3c] p-4">
-    <div class="w-full max-w-sm rounded-[24px] border border-rose-500/30 bg-[#001652]/90 p-8 text-center shadow-2xl backdrop-blur-md space-y-4">
+  <div id="semAcessoScreen" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black p-4">
+    <div class="w-full max-w-sm rounded-[24px] border border-rose-500/30 bg-neutral-900/90 p-8 text-center shadow-2xl backdrop-blur-md space-y-4">
       <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-[18px] bg-rose-500/10 border border-rose-500/30 text-2xl text-rose-400">
         🚫
       </div>
@@ -280,8 +280,8 @@ body.dark-theme .pilula .pilula-texto,
   <!-- ========================================== -->
   <div id="appLayout" class="hidden min-h-screen flex flex-col w-full">
 
-    <!-- TOPO AZUL-MARINHO (bg-[#000d3c] text-white pb-7) -->
-    <header class="bg-[#000d3c] text-white pt-3 pb-8 px-4 sm:px-6 shadow-md relative z-30">
+    <!-- TOPO AZUL-MARINHO (bg-black text-white pb-7) -->
+    <header class="bg-black text-white pt-3 pb-8 px-4 sm:px-6 shadow-md relative z-30">
       <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
         
         <!-- Esquerda: Avatar + Dropdown -->
@@ -1384,7 +1384,7 @@ body.dark-theme .pilula .pilula-texto,
       const isErro = tipo === "erro";
       const bordaCor = isErro ? "border-rose-500 text-rose-300" : "border-[#ff6200] text-slate-100";
 
-      toast.className = `flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-[#001652] ${bordaCor} border shadow-xl text-xs font-semibold backdrop-blur-md transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+      toast.className = `flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-neutral-900 ${bordaCor} border shadow-xl text-xs font-semibold backdrop-blur-md transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
       toast.innerHTML = `
         <span>${isErro ? '⚠️' : '⚡'}</span>
         <span class="truncate max-w-[240px]">${mensagem}</span>`;
@@ -1460,7 +1460,7 @@ body.dark-theme .pilula .pilula-texto,
           return `
           <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-[#1e293b] border border-slate-200/80 dark:border-[#293548] text-xs">
             <div class="flex items-center gap-2.5 min-w-0">
-              <div class="h-7 w-7 rounded-full bg-[#001652] text-[#ffb800] font-bold flex items-center justify-center border border-[#ff6200]/30 text-xs uppercase flex-shrink-0">
+              <div class="h-7 w-7 rounded-full bg-neutral-900 text-[#ffb800] font-bold flex items-center justify-center border border-[#ff6200]/30 text-xs uppercase flex-shrink-0">
                 ${nome.charAt(0)}
               </div>
               <div class="min-w-0">
@@ -1635,13 +1635,13 @@ body.dark-theme .pilula .pilula-texto,
       if (tema === "dark") {
         document.documentElement.classList.add("dark");
         document.body.classList.add("dark");
-        if (meta) meta.setAttribute("content", "#000d3c");
+        if (meta) meta.setAttribute("content", "#000000");
         if (iconLua) iconLua.classList.add("hidden");
         if (iconSol) iconSol.classList.remove("hidden");
       } else {
         document.documentElement.classList.remove("dark");
         document.body.classList.remove("dark");
-        if (meta) meta.setAttribute("content", "#000d3c");
+        if (meta) meta.setAttribute("content", "#000000");
         if (iconSol) iconSol.classList.add("hidden");
         if (iconLua) iconLua.classList.remove("hidden");
       }

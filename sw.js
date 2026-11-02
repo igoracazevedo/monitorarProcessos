@@ -1,4 +1,4 @@
-const CACHE_NAME = "iaz-jud-cache-v4";
+const CACHE_NAME = "iaz-jud-cache-v5";
 // "./index.html" fica de fora: a Vercel redireciona para "./" (cleanUrls) e uma resposta
 // redirecionada guardada no cache não pode ser usada para abrir o app instalado.
 const ASSETS = [
