@@ -2585,5 +2585,84 @@ body.dark-theme .pilula .pilula-texto,
   })();
 </script>
 
+<script>
+  // Tela cheia de versão nova: compara APP_VERSION com o version.json do servidor (a cada 5 min e ao voltar ao app)
+  // e, na primeira abertura de uma versão nova, mostra o que mudou. Ao subir versão: troque APP_VERSION e edite version.json.
+  (function () {
+    var APP_VERSION = '1.1.0';
+    var VISTA = 'jud_versao_vista';
+    var tela = null, dispensada = '';
+    function cmp(a, b) {
+      var x = a.split('.').map(Number), y = b.split('.').map(Number);
+      for (var i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0);
+      return 0;
+    }
+    function esc(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    function dataBR(d) { return String(d).split('-').reverse().join('/'); }
+    function guardar(v) { try { localStorage.setItem(VISTA, v); } catch (e) {} }
+    function fechar() { if (tela) { tela.remove(); tela = null; } }
+    function mostrar(modo, versao, novidades) {
+      fechar();
+      var disp = modo === 'disponivel';
+      tela = document.createElement('div');
+      tela.setAttribute('role', 'dialog');
+      tela.setAttribute('aria-modal', 'true');
+      tela.style.cssText = 'position:fixed;inset:0;z-index:100000;overflow-y:auto;background:#000d3c;color:#fff;font-family:inherit';
+      var cartoes = novidades.length ? novidades.map(function (n) {
+        return '<section style="border-radius:24px;border:1px solid rgba(255,255,255,.1);background:#152354;padding:20px;margin-bottom:16px">' +
+          '<p style="font-size:12px;color:rgba(255,255,255,.5);margin:0">Versão ' + esc(n.versao) + ' · ' + dataBR(n.data) + '</p>' +
+          '<ul style="list-style:none;margin:12px 0 0;padding:0">' + n.itens.map(function (t) {
+            return '<li style="display:flex;gap:12px;font-size:15px;line-height:1.35;color:rgba(255,255,255,.9);margin-bottom:10px">' +
+              '<span style="margin-top:8px;width:6px;height:6px;border-radius:50%;background:#ffb800;flex:none"></span><span>' + esc(t) + '</span></li>';
+          }).join('') + '</ul></section>';
+      }).join('') : '<p style="color:rgba(255,255,255,.7)">Melhorias e correções.</p>';
+      var btn = 'width:100%;border:0;border-radius:999px;cursor:pointer;font:inherit;';
+      tela.innerHTML =
+        '<div style="max-width:576px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:max(env(safe-area-inset-top),40px) 24px max(env(safe-area-inset-bottom),24px)">' +
+        '<div style="width:64px;height:64px;border-radius:24px;background:linear-gradient(45deg,#ff6200,#ffb800);display:grid;place-items:center;font-size:32px">✨</div>' +
+        '<p style="margin:24px 0 0;font-size:14px;color:rgba(255,255,255,.6)">' + (disp ? 'Versão nova disponível' : 'Aplicativo atualizado') + '</p>' +
+        '<h1 style="margin:4px 0 0;font-size:36px;font-weight:600;letter-spacing:-.02em;color:#fff">Versão ' + esc(versao) + '</h1>' +
+        '<p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,.6)">' + (disp ? 'Atualize para usar as novidades:' : 'O que mudou:') + '</p>' +
+        '<div style="margin-top:24px;flex:1">' + cartoes + '</div>' +
+        '<div style="margin-top:32px">' +
+        '<button id="nv-ok" style="' + btn + 'background:#ff6200;color:#fff;font-weight:600;font-size:16px;padding:16px">' + (disp ? '🔄 Atualizar aplicativo' : 'Continuar') + '</button>' +
+        (disp ? '<button id="nv-depois" style="' + btn + 'background:none;color:rgba(255,255,255,.6);font-size:14px;padding:12px;margin-top:8px">Agora não</button>' : '') +
+        '</div></div>';
+      document.body.appendChild(tela);
+      document.getElementById('nv-ok').onclick = function () {
+        if (!disp) { guardar(APP_VERSION); fechar(); return; }
+        this.disabled = true; this.textContent = 'Atualizando…';
+        guardar(versao);
+        var ir = function () { var u = new URL(location.href); u.searchParams.set('v', versao); location.replace(u.toString()); };
+        if (navigator.serviceWorker) navigator.serviceWorker.getRegistration().then(function (r) { return r && r.update(); }).then(ir, ir); else ir();
+      };
+      var d = document.getElementById('nv-depois');
+      if (d) d.onclick = function () { dispensada = versao; fechar(); };
+    }
+    function conferir() {
+      fetch('./version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+        if (!j || !j.versao || cmp(j.versao, APP_VERSION) <= 0 || dispensada === j.versao) return;
+        if (tela && tela.dataset.v === j.versao) return;
+        mostrar('disponivel', j.versao, (j.novidades || []).filter(function (n) { return cmp(n.versao, APP_VERSION) > 0; }));
+        tela.dataset.v = j.versao;
+      }).catch(function () {});
+    }
+    function iniciar() {
+      // primeira abertura desta versão: mostra o que mudou (precisa do version.json para ler as novidades)
+      var vista = null;
+      try { vista = localStorage.getItem(VISTA); } catch (e) {}
+      if (vista && cmp(APP_VERSION, vista) <= 0) { conferir(); return; }
+      fetch('./version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+        var lista = (j && j.novidades) || [];
+        var novas = vista ? lista.filter(function (n) { return cmp(n.versao, vista) > 0 && cmp(n.versao, APP_VERSION) <= 0; }) : lista.filter(function (n) { return n.versao === APP_VERSION; });
+        if (novas.length) mostrar('atualizado', APP_VERSION, novas); else { guardar(APP_VERSION); conferir(); }
+      }).catch(function () {});
+    }
+    iniciar();
+    setInterval(conferir, 5 * 60000);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') conferir(); });
+  })();
+</script>
+
 </body>
 </html>

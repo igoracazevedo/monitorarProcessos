@@ -50,3 +50,6 @@ Sistema full-stack para monitoramento de processos judiciais integrado diretamen
   - `semAcessoScreen`: Bloqueio amigável para e-mails não cadastrados.
   - `appLayout`: Painel principal com visão geral, filtros, histórico e exportação (Excel/PDF).
   - `usuariosModal`: Modal para administração de usuários liberados.
+
+## Versão e tela de atualização
+A tela cheia "Versão nova" usa `APP_VERSION` (script no fim do `index.html`) e o `version.json` da raiz. A cada publicação, suba os dois (patch para correção, minor para função nova) e adicione no topo de `novidades` do `version.json` a versão, a data e frases curtas do que mudou.

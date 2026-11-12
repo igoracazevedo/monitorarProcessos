@@ -1,0 +1,12 @@
+{
+  "versao": "1.1.0",
+  "novidades": [
+    {
+      "versao": "1.1.0",
+      "data": "2026-11-11",
+      "itens": [
+        "Quando sair uma versão nova, o app avisa em tela cheia, mostra o que mudou e tem o botão Atualizar aplicativo."
+      ]
+    }
+  ]
+}
