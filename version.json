@@ -1,6 +1,13 @@
 {
-  "versao": "1.1.0",
+  "versao": "1.2.0",
   "novidades": [
+    {
+      "versao": "1.2.0",
+      "data": "2026-11-15",
+      "itens": [
+        "Nova tela de abertura: o ícone do app fica animado enquanto você entra e os dados carregam, e o app só aparece com tudo pronto."
+      ]
+    },
     {
       "versao": "1.1.0",
       "data": "2026-11-11",

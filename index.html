@@ -210,6 +210,41 @@ body.dark-theme .pilula .pilula-texto,
 </style>
 </head>
 <body class="bg-[#f4f5f7] dark:bg-[#0b1120] text-slate-800 dark:text-slate-200 min-h-screen transition-colors duration-150">
+  <!-- Tela de abertura: ícone animado até o login e os dados carregarem -->
+  <style>
+    #abertura { position: fixed; inset: 0; z-index: 2147483000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; background: radial-gradient(circle at 50% 38%, #4c0c1f 0%, #150d10 50%, #0a0a0a 100%); transition: opacity .5s; font-family: inherit; }
+    #abertura.saindo { opacity: 0; pointer-events: none; }
+    #abertura .ab-caixa { position: relative; display: grid; place-items: center; }
+    #abertura .ab-anel { position: absolute; width: 144px; height: 144px; border-radius: 35px; border: 2px solid rgba(251, 113, 133, 0.45); animation: ab-anel 1.6s ease-out infinite; }
+    #abertura .ab-anel.ab-2 { animation-delay: .8s; }
+    #abertura img { position: relative; width: 96px; height: 96px; border-radius: 26px; box-shadow: 0 20px 40px rgba(0,0,0,.45); animation: ab-icone 1.6s ease-in-out infinite; }
+    #abertura .ab-nome { color: #fff; font-weight: 700; font-size: 18px; letter-spacing: -.01em; text-align: center; margin: 0; }
+    #abertura .ab-texto { margin: 4px 0 0; color: rgba(254, 205, 211, 0.85); font-size: 12px; font-weight: 500; display: flex; gap: 4px; align-items: center; justify-content: center; }
+    #abertura .ab-pontos i { display: inline-block; width: 4px; height: 4px; margin: 0 1px; border-radius: 50%; background: rgba(254, 205, 211, 0.85); animation: ab-ponto 1.2s infinite; }
+    #abertura .ab-pontos i:nth-child(2) { animation-delay: .15s; }
+    #abertura .ab-pontos i:nth-child(3) { animation-delay: .3s; }
+    @keyframes ab-icone { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+    @keyframes ab-anel { 0% { transform: scale(.75); opacity: .9; } 100% { transform: scale(1.35); opacity: 0; } }
+    @keyframes ab-ponto { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
+    @media (prefers-reduced-motion: reduce) { #abertura img, #abertura .ab-anel, #abertura .ab-pontos i { animation: none; } }
+  </style>
+  <div id="abertura" role="status" aria-live="polite">
+    <div class="ab-caixa"><span class="ab-anel"></span><span class="ab-anel ab-2"></span><img src="./icon-192.png" alt="Monitorar Processos"></div>
+    <div><p class="ab-nome">Monitorar Processos</p><p class="ab-texto"><span id="abertura-texto">Carregando seus dados</span><span class="ab-pontos"><i></i><i></i><i></i></span></p></div>
+  </div>
+  <script>
+    // fecha a abertura quando a 1ª carga terminar (ou quando for para o login); libera sozinha em 25 s
+    window.fecharAbertura = function () {
+      var el = document.getElementById('abertura');
+      if (!el || el.classList.contains('saindo')) return;
+      requestAnimationFrame(function () { requestAnimationFrame(function () {
+        el.classList.add('saindo');
+        setTimeout(function () { el.remove(); }, 550);
+      }); });
+    };
+    setTimeout(window.fecharAbertura, 25000);
+  </script>
+
 
   <!-- ========================================== -->
   <!-- 1. TELAS DE AUTENTICAÇÃO                    -->
@@ -1148,6 +1183,7 @@ body.dark-theme .pilula .pilula-texto,
       semAcesso.classList.add("hidden");
       app.classList.add("hidden");
 
+      if (estado === 'login' || estado === 'sem-acesso') window.fecharAbertura && window.fecharAbertura();
       if (estado === 'loading') loading.classList.remove("hidden");
       else if (estado === 'login') login.classList.remove("hidden");
       else if (estado === 'sem-acesso') semAcesso.classList.remove("hidden");
@@ -1758,6 +1794,7 @@ body.dark-theme .pilula .pilula-texto,
       } catch (err) {
         container.innerHTML = `<div class="text-center text-rose-500 text-xs py-4">Erro ao carregar do Supabase: ${err.message}</div>`;
       }
+      window.fecharAbertura && window.fecharAbertura();
     }
 
     function atualizarSeletoresEmpresa() {
@@ -2589,7 +2626,7 @@ body.dark-theme .pilula .pilula-texto,
   // Tela cheia de versão nova: compara APP_VERSION com o version.json do servidor (a cada 5 min e ao voltar ao app)
   // e, na primeira abertura de uma versão nova, mostra o que mudou. Ao subir versão: troque APP_VERSION e edite version.json.
   (function () {
-    var APP_VERSION = '1.1.0';
+    var APP_VERSION = '1.2.0';
     var VISTA = 'jud_versao_vista';
     var tela = null, dispensada = '';
     function cmp(a, b) {
