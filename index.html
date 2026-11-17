@@ -400,39 +400,6 @@ body.dark-theme .pilula .pilula-texto,
 
         <!-- Direita: Ícones Redondos (Buscar · Ajuda · Tema · Sincronizar) -->
         <div class="flex items-center gap-1 sm:gap-1.5">
-        <button id="btnEyeToggle" onclick="toggleModoPrivacidade()" class="p-2 rounded-full hover:bg-white/10 text-white transition" title="Ocultar/Exibir Contadores e Valores" aria-label="Ocultar ou mostrar valores">
-            <svg id="eyeIconOpen" class="w-4 h-4 text-[#ff6200]" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            <svg id="eyeIconClosed" class="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-              <line x1="1" y1="1" x2="23" y2="23"></line>
-            </svg>
-            <span id="eyeText" class="hidden">Valores</span>
-          </button>
-
-          <!-- 1. Buscar (Lupa) -->
-          <button id="btnNavBuscar" onclick="alternarBarraBusca()" 
-            class="p-2 rounded-full hover:bg-white/10 text-slate-200 transition" 
-            title="Buscar Processos">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-          </button>
-
-          <!-- 2. Ajuda (?) em Dourado #ffb800 -->
-          <button onclick="abrirGuiaAjuda()" 
-            class="p-2 rounded-full hover:bg-white/10 text-[#ffb800] transition" 
-            title="Como usar esta tela">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-          </button>
-
           <!-- 3. Tema (Lua/Sol) -->
           <button id="btnNavTema" onclick="alternarTemaRapido()" 
             class="p-2 rounded-full hover:bg-white/10 text-slate-200 transition" 
@@ -563,10 +530,10 @@ body.dark-theme .pilula .pilula-texto,
             <button onclick="ajustarPeriodo(1)" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold" title="Próximo Mês">›</button>
           </div>
           <div class="flex items-center gap-2">
-            <button onclick="definirPeriodoMesAtual()" class="px-2.5 py-1 rounded-full bg-[#ff6200]/10 hover:bg-[#ff6200]/20 text-[#ec7000] font-semibold text-[11px] transition">
+            <button id="btnMesAtual" onclick="definirPeriodoMesAtual()" class="px-2.5 py-1 rounded-full bg-[#ff6200]/10 hover:bg-[#ff6200]/20 text-[#ec7000] font-semibold text-[11px] transition">
               Mês Atual
             </button>
-            <button onclick="limparFiltroPeriodo()" id="btnTodosPeriodo" class="px-2 py-1 rounded-full text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-[11px] font-medium transition">
+            <button onclick="limparFiltroPeriodo()" id="btnTodosPeriodo" class="px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-[11px] font-medium transition">
               Todos
             </button>
           </div>
@@ -1042,6 +1009,7 @@ body.dark-theme .pilula .pilula-texto,
     // Estado da Aplicação
     let processosData = [];
     let empresasData = [];
+    const gruposAbertos = new Set(); // seções (tipos) que você abriu; começam recolhidas
     let logoTempBase64 = "";
 
     // Estado Global de Autenticação
@@ -1377,11 +1345,22 @@ body.dark-theme .pilula .pilula-texto,
     }
 
     // Seletor de Período
+    const PERIODO_ATIVO = "bg-[#ff6200]/10 text-[#ec7000] font-semibold";
+    const PERIODO_INATIVO = "text-slate-500 dark:text-slate-400 font-medium";
+    function marcarBotaoPeriodo(modo) {
+      const mes = document.getElementById("btnMesAtual");
+      const todos = document.getElementById("btnTodosPeriodo");
+      const base = "px-2.5 py-1 rounded-full text-[11px] transition hover:bg-[#ff6200]/20 ";
+      if (mes) mes.className = base + (modo === "mes" ? PERIODO_ATIVO : PERIODO_INATIVO);
+      if (todos) todos.className = base + (modo === "todos" ? PERIODO_ATIVO : PERIODO_INATIVO);
+    }
+
     function definirPeriodoMesAtual() {
       const now = new Date();
       dataInicioPeriodo = new Date(now.getFullYear(), now.getMonth(), 1);
       dataFimPeriodo = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
       atualizarLabelPeriodo();
+      marcarBotaoPeriodo("mes");
       renderProcessos();
     }
 
@@ -1392,6 +1371,7 @@ body.dark-theme .pilula .pilula-texto,
       dataInicioPeriodo = new Date(ano, mes, 1);
       dataFimPeriodo = new Date(ano, mes + 1, 0, 23, 59, 59);
       atualizarLabelPeriodo();
+      marcarBotaoPeriodo("outro");
       renderProcessos();
     }
 
@@ -1400,6 +1380,7 @@ body.dark-theme .pilula .pilula-texto,
       dataFimPeriodo = null;
       const lbl = document.getElementById("labelPeriodo");
       if (lbl) lbl.innerText = "Todos os Períodos";
+      marcarBotaoPeriodo("todos");
       renderProcessos();
       exibirToast("Mostrando todos os períodos", "info");
     }
@@ -1800,7 +1781,7 @@ body.dark-theme .pilula .pilula-texto,
     function atualizarSeletoresEmpresa() {
       const selFiltro = document.getElementById("empresaFilter");
       const selForm = document.getElementById("campoEmpresa");
-      const selAtualFiltro = selFiltro.value;
+      const selAtualFiltro = selFiltro.value || lerUltimaEmpresa();
       const selAtualForm = selForm.value;
 
       selFiltro.innerHTML = `<option value="">🏢 Todas as Empresas</option>`;
@@ -1845,7 +1826,18 @@ body.dark-theme .pilula .pilula-texto,
     }
 
     function aoFiltrarEmpresa() {
+      try { localStorage.setItem("jud_ultima_empresa", document.getElementById("empresaFilter").value); } catch (e) {}
       renderProcessos();
+    }
+
+    function lerUltimaEmpresa() {
+      try { return localStorage.getItem("jud_ultima_empresa") || ""; } catch (e) { return ""; }
+    }
+
+    function lembrarGrupo(el, tipoCodificado) {
+      const tipo = decodeURIComponent(tipoCodificado);
+      if (el.open) gruposAbertos.add(tipo);
+      else gruposAbertos.delete(tipo);
     }
 
     function obterNomeEmpresa(cod) {
@@ -2185,7 +2177,7 @@ body.dark-theme .pilula .pilula-texto,
         }).join('');
 
         return `
-        <details class="group bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] rounded-3xl overflow-hidden shadow-2xs mb-3" open>
+        <details ontoggle="lembrarGrupo(this, '${encodeURIComponent(tipo)}')" class="group bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] rounded-3xl overflow-hidden shadow-2xs mb-3"${gruposAbertos.has(tipo) ? " open" : ""}>
           <summary class="cursor-pointer px-4 py-3.5 flex items-center justify-between font-bold text-sm bg-slate-50/70 dark:bg-[#1e293b]/70 border-b border-slate-200/80 dark:border-[#293548]">
             <span class="text-slate-900 dark:text-white font-extrabold">📁 ${tipo} (${lista.length})</span>
             <span class="text-xs text-[#ec7000] font-bold">Ver todos →</span>
