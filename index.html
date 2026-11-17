@@ -2226,18 +2226,11 @@ body.dark-theme .pilula .pilula-texto,
         const baseUrl = API_URL.replace(/\/+$/, '');
         const endpoint = baseUrl.endsWith("/api") ? `${baseUrl}/consultar` : baseUrl;
 
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "consultar_datajud",
-            processo: numProcesso,
-            tribunal: tribunal
-          })
-        });
+        // mesmas novas tentativas da sincronização geral (o DataJud devolve 429 quando está ocupado)
+        const res = await consultarComTentativas(endpoint, numProcesso, tribunal);
 
         if (!res.ok) {
-          throw new Error(`Falha na API [${res.status}]`);
+          throw new Error(res.status === 429 ? "DataJud ocupado (429). Tente de novo em um minuto." : `Falha na API [${res.status}]`);
         }
 
         const json = await res.json();
