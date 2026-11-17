@@ -345,7 +345,7 @@ body.dark-theme .pilula .pilula-texto,
                   <span id="userBadgePapel" class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-[#ff6200]/10 text-[#ec7000] border border-[#ff6200]/20">
                     Operador
                   </span>
-                  <span class="text-[10px] text-slate-400 font-mono">v2.4.0</span>
+                  <span class="text-[10px] text-slate-400 font-mono" data-app-version>v1.2.0</span>
                 </div>
               </div>
             </div>
@@ -2662,6 +2662,8 @@ body.dark-theme .pilula .pilula-texto,
   // e, na primeira abertura de uma versão nova, mostra o que mudou. Ao subir versão: troque APP_VERSION e edite version.json.
   (function () {
     var APP_VERSION = '1.2.0';
+    // o rótulo do menu mostra sempre a mesma versão do app (não um texto fixo)
+    document.querySelectorAll('[data-app-version]').forEach(function (el) { el.textContent = 'v' + APP_VERSION; });
     var VISTA = 'jud_versao_vista';
     var tela = null, dispensada = '';
     function cmp(a, b) {
