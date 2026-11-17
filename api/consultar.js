@@ -1,4 +1,8 @@
 // Vercel Serverless Function - Proxy Oficial DataJud CNJ
+// A chave vem da variável DATAJUD_API_KEY (Vercel). A chave pública vigente está na wiki do CNJ
+// (https://datajud-wiki.cnj.jus.br/api-publica/acesso) e pode mudar; por isso a reserva abaixo é só para não parar.
+const CHAVE_PUBLICA_PADRAO = "cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==";
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -47,7 +51,7 @@ export default async function handler(req, res) {
     const datajudResp = await fetch(datajudUrl, {
       method: "POST",
       headers: {
-        "Authorization": "APIKey cDZHYUpZa0JadVREZDJCendQbXY6SkJlTkxScEtTTEdBTUpDaWZ1MWh1TFlyZw==",
+        "Authorization": `APIKey ${process.env.DATAJUD_API_KEY || CHAVE_PUBLICA_PADRAO}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
