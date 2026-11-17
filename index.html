@@ -979,8 +979,8 @@ body.dark-theme .pilula .pilula-texto,
   </div>
 
   <!-- MODAL: Sincronização DataJud em Lote -->
-  <div id="syncModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4">
+  <div id="syncModal" class="hidden fixed inset-x-0 bottom-0 z-40 p-3 flex justify-center pointer-events-none">
+    <div class="pointer-events-auto bg-white dark:bg-[#151f32] border border-slate-200/80 dark:border-[#293548] w-full max-w-md rounded-3xl p-4 shadow-2xl space-y-3">
       <div class="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-[#293548]">
         <div class="flex items-center gap-2">
           <span class="text-lg text-[#ff6200]">⚡</span>
@@ -989,7 +989,7 @@ body.dark-theme .pilula .pilula-texto,
             <p id="syncStatusSubtitle" class="text-[10px] text-slate-500 dark:text-slate-400">Consultando e atualizando no Supabase</p>
           </div>
         </div>
-        <button id="btnCloseSyncModal" onclick="fecharSyncModal()" class="hidden p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold">✕</button>
+        <button id="btnCloseSyncModal" onclick="fecharSyncModal()" title="Recolher (a sincronização continua)" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold">✕</button>
       </div>
 
       <div>
@@ -1002,7 +1002,7 @@ body.dark-theme .pilula .pilula-texto,
         </div>
       </div>
 
-      <div id="syncLogBox" class="bg-slate-50 dark:bg-[#0b1120] border border-slate-200 dark:border-[#293548] rounded-xl p-3 h-44 overflow-y-auto font-mono text-[11px] space-y-1">
+      <div id="syncLogBox" class="bg-slate-50 dark:bg-[#0b1120] border border-slate-200 dark:border-[#293548] rounded-xl p-3 h-28 overflow-y-auto font-mono text-[11px] space-y-1">
       </div>
 
       <div class="flex justify-end pt-1">
@@ -2317,58 +2317,85 @@ body.dark-theme .pilula .pilula-texto,
       box.scrollTop = box.scrollHeight;
     }
 
+    // Sincronização em segundo plano: roda enquanto você usa o sistema; o painel só mostra o andamento.
+    let syncRodando = false;
+
+    function mostrarPainelSync() {
+      document.getElementById("syncModal").classList.remove("hidden");
+    }
+
     function fecharSyncModal() {
+      // só recolhe o painel: a sincronização continua
       document.getElementById("syncModal").classList.add("hidden");
-      carregarProcessos();
+      if (!syncRodando) carregarProcessos();
+    }
+
+    const pausa = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    // Consulta com novas tentativas quando o DataJud recusa por excesso de pedidos (429) ou demora (504)
+    async function consultarComTentativas(endpoint, num, trib) {
+      const esperas = [4000, 8000, 16000, 30000];
+      for (let tentativa = 0; ; tentativa++) {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "consultar_datajud", processo: num, tribunal: trib })
+        });
+        if ((res.status === 429 || res.status === 504) && tentativa < esperas.length) {
+          adicionarLogSync(`↻ ${num}: DataJud ocupado (${res.status}), tentando de novo em ${esperas[tentativa] / 1000} s`, "warn");
+          await pausa(esperas[tentativa]);
+          continue;
+        }
+        return res;
+      }
     }
 
     async function sincronizarDataJud() {
+      if (syncRodando) return mostrarPainelSync(); // já está rodando: só mostra o painel
       if (!processosData.length) {
         alert("Nenhum processo carregado para sincronizar.");
         return;
       }
 
+      const lista = [...processosData];
       const modal = document.getElementById("syncModal");
       const progressText = document.getElementById("syncProgressText");
       const percentText = document.getElementById("syncPercentText");
       const progressBar = document.getElementById("syncProgressBar");
       const logBox = document.getElementById("syncLogBox");
       const btnConcluir = document.getElementById("btnConcluirSync");
-      const btnClose = document.getElementById("btnCloseSyncModal");
+      const subtitulo = document.getElementById("syncStatusSubtitle");
+      const btnNav = document.getElementById("btnNavSync");
 
+      syncRodando = true;
       modal.classList.remove("hidden");
+      btnNav?.classList.add("animate-pulse");
+      if (btnNav) btnNav.title = "Sincronizando… (toque para ver)";
+      subtitulo.innerText = "Rodando em segundo plano: pode usar o sistema normalmente";
       btnConcluir.disabled = true;
       btnConcluir.className = "px-4 py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-semibold cursor-not-allowed";
-      btnClose.classList.add("hidden");
       logBox.innerHTML = "";
+      progressBar.style.width = "0%";
+      percentText.innerText = "0%";
 
-      adicionarLogSync(`Iniciando sincronização de ${processosData.length} processos direto com Supabase e CNJ...`, "info");
+      adicionarLogSync(`Iniciando sincronização de ${lista.length} processos direto com Supabase e CNJ...`, "info");
 
-      const total = processosData.length;
+      const total = lista.length;
       let concluidos = 0;
       let sucessos = 0;
       let falhas = 0;
 
-      const baseUrl = API_URL.replace(/\/+$/, '');
+      const baseUrl = API_URL.replace(/\/+$/, "");
       const endpoint = baseUrl.endsWith("/api") ? `${baseUrl}/consultar` : baseUrl;
 
       for (let i = 0; i < total; i++) {
-        const p = processosData[i];
+        const p = lista[i];
         const num = p.processo;
         const trib = p.tribunal || "";
 
         try {
-          const res = await fetch(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "consultar_datajud",
-              processo: num,
-              tribunal: trib
-            })
-          });
-
-          const json = await res.json();
+          const res = await consultarComTentativas(endpoint, num, trib);
+          const json = await res.json().catch(() => ({}));
           const agoraIso = new Date().toISOString();
 
           if (json.success && json.data) {
@@ -2399,7 +2426,7 @@ body.dark-theme .pilula .pilula-texto,
               ultima_verificacao: agoraIso
             }).catch(() => {});
             falhas++;
-            adicionarLogSync(`⚠ ${num}: ${json.mensagem || 'Não localizado no DataJud'}`, "warn");
+            adicionarLogSync(`⚠ ${num}: ${json.mensagem || `Erro DataJud [${res.status}]`}`, "warn");
           }
         } catch (err) {
           falhas++;
@@ -2411,12 +2438,20 @@ body.dark-theme .pilula .pilula-texto,
         progressText.innerText = `${concluidos} / ${total} concluídos`;
         percentText.innerText = `${pct}%`;
         progressBar.style.width = `${pct}%`;
+
+        // pausa curta entre processos para não sobrecarregar o DataJud
+        if (i < total - 1) await pausa(1500);
       }
 
+      syncRodando = false;
+      btnNav?.classList.remove("animate-pulse");
+      if (btnNav) btnNav.title = "Sincronizar DataJud (Todos)";
       adicionarLogSync(`--- Finalizado! Atualizados: ${sucessos} | Não encontrados/Erros: ${falhas} ---`, "success");
+      subtitulo.innerText = "Concluído";
       btnConcluir.disabled = false;
       btnConcluir.className = "px-5 py-2 bg-[#ff6200] hover:bg-[#ec7000] text-white rounded-xl text-xs font-bold transition";
-      btnClose.classList.remove("hidden");
+      exibirToast(`Sincronização concluída: ${sucessos} atualizados, ${falhas} com erro`, falhas ? "erro" : "sucesso");
+      carregarProcessos();
     }
 
     async function salvarProcesso(e) {
